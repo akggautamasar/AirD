@@ -75,6 +75,30 @@
             transform: translateY(0);
         }
 
+        .open-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            min-width: 160px;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .open-button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .open-button:active {
+            transform: translateY(0);
+        }
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             body {
@@ -90,7 +114,7 @@
                 gap: 10px;
             }
 
-            .copy-button {
+            .copy-button, .open-button {
                 padding: 10px 20px;
                 font-size: 14px;
                 min-width: 140px;
@@ -109,7 +133,7 @@
                 align-items: center;
             }
 
-            .copy-button {
+            .copy-button, .open-button {
                 width: 100%;
                 max-width: 280px;
                 margin-bottom: 8px;
@@ -219,6 +243,7 @@
     <div class="buttons-container">
         <button class="copy-button" onclick="copyStreamUrl()">Copy Stream URL</button>
         <button class="copy-button" onclick="copyDownloadUrl()">Copy Download URL</button>
+        <button class="open-button" onclick="openDownloadUrl()">Open Download URL</button>
     </div>
 
     <script>
@@ -277,7 +302,7 @@
                 setTimeout(() => {
                     successDiv.remove();
                 }, 300);
-            }, 3000);
+            }, 300);
         }
 
         function copyTextToClipboard(text) {
@@ -330,6 +355,14 @@
             }
         }
 
+        function openDownloadUrl() {
+            if (downloadUrl) {
+                window.location.href = downloadUrl;
+            } else {
+                alert('No download URL available.');
+            }
+        }
+
         // Handle orientation changes on mobile
         window.addEventListener('orientationchange', function() {
             setTimeout(function() {
@@ -350,6 +383,10 @@
                     case 'd':
                         e.preventDefault();
                         copyDownloadUrl();
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        openDownloadUrl();
                         break;
                 }
             }
