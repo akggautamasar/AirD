@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (getCurrentPath().includes('/share_')) {
-        getCurrentDirectoryWithSort()
+        getCurrentDirectory()
     } else {
         if (getPassword() === null) {
             document.getElementById('bg-blur').style.zIndex = '2';
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('get-password').style.zIndex = '3';
             document.getElementById('get-password').style.opacity = '1';
         } else {
-            getCurrentDirectoryWithSort()
+            getCurrentDirectory()
         }
     }
 });
