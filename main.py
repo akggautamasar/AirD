@@ -114,33 +114,35 @@ async def api_get_directory(request: Request):
         is_admin = False
 
     auth = data.get("auth")
+    sort_by = data.get("sort_by", "date")  # name, date, size
+    sort_order = data.get("sort_order", "desc")  # asc, desc
 
     logger.info(f"getFolder {data}")
 
     if data["path"] == "/trash":
         data = {"contents": DRIVE_DATA.get_trashed_files_folders()}
-        folder_data = convert_class_to_dict(data, isObject=False, showtrash=True)
+        folder_data = convert_class_to_dict(data, isObject=False, showtrash=True, sort_by=sort_by, sort_order=sort_order)
 
     elif "/search_" in data["path"]:
         query = urllib.parse.unquote(data["path"].split("_", 1)[1])
         print(query)
         data = {"contents": DRIVE_DATA.search_file_folder(query)}
         print(data)
-        folder_data = convert_class_to_dict(data, isObject=False, showtrash=False)
+        folder_data = convert_class_to_dict(data, isObject=False, showtrash=False, sort_by=sort_by, sort_order=sort_order)
         print(folder_data)
 
     elif "/share_" in data["path"]:
         path = data["path"].split("_", 1)[1]
         folder_data, auth_home_path = DRIVE_DATA.get_directory(path, is_admin, auth)
         auth_home_path= auth_home_path.replace("//", "/") if auth_home_path else None
-        folder_data = convert_class_to_dict(folder_data, isObject=True, showtrash=False)
+        folder_data = convert_class_to_dict(folder_data, isObject=True, showtrash=False, sort_by=sort_by, sort_order=sort_order)
         return JSONResponse(
             {"status": "ok", "data": folder_data, "auth_home_path": auth_home_path}
         )
 
     else:
         folder_data = DRIVE_DATA.get_directory(data["path"])
-        folder_data = convert_class_to_dict(folder_data, isObject=True, showtrash=False)
+        folder_data = convert_class_to_dict(folder_data, isObject=True, showtrash=False, sort_by=sort_by, sort_order=sort_order)
     return JSONResponse({"status": "ok", "data": folder_data, "auth_home_path": None})
 
 
@@ -284,6 +286,57 @@ async def delete_file_folder(request: Request):
     logger.info(f"deleteFileFolder {data}")
     DRIVE_DATA.delete_file_folder(data["path"])
     return JSONResponse({"status": "ok"})
+
+
+@app.post("/api/moveFileFolder")
+async def move_file_folder(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+
+    data = await request.json()
+
+    if data["password"] != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"moveFileFolder {data}")
+    try:
+        DRIVE_DATA.move_file_folder(data["source_path"], data["destination_path"])
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        return JSONResponse({"status": str(e)})
+
+
+@app.post("/api/copyFileFolder")
+async def copy_file_folder(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+
+    data = await request.json()
+
+    if data["password"] != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"copyFileFolder {data}")
+    try:
+        DRIVE_DATA.copy_file_folder(data["source_path"], data["destination_path"])
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        return JSONResponse({"status": str(e)})
+
+
+@app.post("/api/getFolderTree")
+async def get_folder_tree(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+
+    data = await request.json()
+
+    if data["password"] != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"getFolderTree {data}")
+    try:
+        folder_tree = DRIVE_DATA.get_folder_tree()
+        return JSONResponse({"status": "ok", "data": folder_tree})
+    except Exception as e:
+        return JSONResponse({"status": str(e)})
 
 
 @app.post("/api/getFileInfoFromUrl")

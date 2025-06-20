@@ -7,6 +7,7 @@ from utils.logger import Logger
 from datetime import datetime, timezone
 import os
 import signal
+import copy
 
 logger = Logger(__name__)
 
@@ -231,6 +232,125 @@ class NewDriveData:
         del folder_data.contents[file_id]
         self.save()
         logger.info(f"Item at path '{path}' deleted successfully.")
+
+    def move_file_folder(self, source_path: str, destination_path: str) -> None:
+        """Move a file or folder from source to destination"""
+        logger.info(f"Moving item from '{source_path}' to '{destination_path}'.")
+        
+        # Get source item
+        if len(source_path.strip("/").split("/")) > 0:
+            source_folder_path = "/" + "/".join(source_path.strip("/").split("/")[:-1])
+            source_item_id = source_path.strip("/").split("/")[-1]
+        else:
+            source_folder_path = "/"
+            source_item_id = source_path.strip("/")
+        
+        source_folder = self.get_directory(source_folder_path)
+        if source_item_id not in source_folder.contents:
+            raise Exception("Source item not found")
+        
+        source_item = source_folder.contents[source_item_id]
+        
+        # Get destination folder
+        destination_folder = self.get_directory(destination_path)
+        
+        # Check if item with same name already exists in destination
+        for item in destination_folder.contents.values():
+            if item.name == source_item.name:
+                raise Exception(f"Item with name '{source_item.name}' already exists in destination folder")
+        
+        # Move the item
+        destination_folder.contents[source_item_id] = source_item
+        del source_folder.contents[source_item_id]
+        
+        # Update the path of the moved item
+        source_item.path = destination_path
+        
+        self.save()
+        logger.info(f"Item moved successfully from '{source_path}' to '{destination_path}'.")
+
+    def copy_file_folder(self, source_path: str, destination_path: str) -> None:
+        """Copy a file or folder from source to destination"""
+        logger.info(f"Copying item from '{source_path}' to '{destination_path}'.")
+        
+        # Get source item
+        if len(source_path.strip("/").split("/")) > 0:
+            source_folder_path = "/" + "/".join(source_path.strip("/").split("/")[:-1])
+            source_item_id = source_path.strip("/").split("/")[-1]
+        else:
+            source_folder_path = "/"
+            source_item_id = source_path.strip("/")
+        
+        source_folder = self.get_directory(source_folder_path)
+        if source_item_id not in source_folder.contents:
+            raise Exception("Source item not found")
+        
+        source_item = source_folder.contents[source_item_id]
+        
+        # Get destination folder
+        destination_folder = self.get_directory(destination_path)
+        
+        # Check if item with same name already exists in destination
+        for item in destination_folder.contents.values():
+            if item.name == source_item.name:
+                raise Exception(f"Item with name '{source_item.name}' already exists in destination folder")
+        
+        # Create a deep copy of the source item
+        copied_item = copy.deepcopy(source_item)
+        
+        # Generate new ID for the copied item and update used_ids
+        copied_item.id = getRandomID()
+        
+        # Update the path of the copied item
+        copied_item.path = destination_path
+        
+        # If it's a folder, recursively update IDs and paths for all contents
+        if copied_item.type == "folder":
+            self._update_copied_folder_contents(copied_item, destination_path)
+        
+        # Add the copied item to destination
+        destination_folder.contents[copied_item.id] = copied_item
+        
+        self.save()
+        logger.info(f"Item copied successfully from '{source_path}' to '{destination_path}'.")
+
+    def _update_copied_folder_contents(self, folder, new_base_path):
+        """Recursively update IDs and paths for copied folder contents"""
+        for item_id, item in list(folder.contents.items()):
+            # Generate new ID
+            new_id = getRandomID()
+            
+            # Update the item's ID and path
+            item.id = new_id
+            item.path = new_base_path + "/" + folder.id
+            
+            # Update the dictionary key
+            del folder.contents[item_id]
+            folder.contents[new_id] = item
+            
+            # If it's a folder, recursively update its contents
+            if item.type == "folder":
+                self._update_copied_folder_contents(item, item.path)
+
+    def get_folder_tree(self) -> dict:
+        """Get a tree structure of all folders for move/copy operations"""
+        def build_tree(folder, current_path=""):
+            tree = {
+                "id": folder.id,
+                "name": folder.name,
+                "path": current_path,
+                "children": []
+            }
+            
+            for item in folder.contents.values():
+                if item.type == "folder" and not item.trash:
+                    child_path = f"{current_path}/{item.id}" if current_path else f"/{item.id}"
+                    tree["children"].append(build_tree(item, child_path))
+            
+            return tree
+        
+        root_folder = self.get_directory("/")
+        return build_tree(root_folder, "/")
 
     def search_file_folder(self, query: str):
         logger.info(f"Searching for items matching query '{query}'.")

@@ -87,6 +87,20 @@
         </div>
         <!-- File / Folder Rename End -->
 
+        <!-- Move/Copy Modal Start -->
+        <div id="move-copy-modal" class="create-new-folder">
+            <span id="move-copy-title">Move Item</span>
+            <div class="folder-tree" id="folder-tree">
+                <!-- Folder tree will be populated here -->
+            </div>
+            <div class="move-copy-actions">
+                <button id="move-copy-cancel">Cancel</button>
+                <button id="move-item-btn" class="primary-btn">Move</button>
+                <button id="copy-item-btn" class="secondary-btn">Copy</button>
+            </div>
+        </div>
+        <!-- Move/Copy Modal End -->
+
         <!-- Remote Upload Start -->
         <div id="new-url-upload" class="create-new-folder">
             <span>URL Upload</span>
@@ -138,6 +152,20 @@
                         <input id="file-search" type="text" placeholder="Search in Drive" autocomplete="off" />
                     </form>
                 </div>
+                
+                <!-- Sort Controls -->
+                <div class="sort-controls">
+                    <select id="sort-by" class="sort-select">
+                        <option value="date">Sort by Date</option>
+                        <option value="name">Sort by Name</option>
+                        <option value="size">Sort by Size</option>
+                    </select>
+                    <button id="sort-order" class="sort-order-btn" data-order="desc" title="Descending">
+                        <svg viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M7 14l5-5 5 5z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="directory">
@@ -162,6 +190,8 @@
     <script src="static/js/apiHandler.js"></script>
     <script src="static/js/sidebar.js"></script>
     <script src="static/js/fileClickHandler.js"></script>
+    <script src="static/js/sorting.js"></script>
+    <script src="static/js/moveCopy.js"></script>
     <script src="static/js/main.js"></script>
     <script src="static/js/mobile.js"></script>
 </body>

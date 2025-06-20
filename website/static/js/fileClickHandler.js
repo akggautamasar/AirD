@@ -43,6 +43,8 @@ function openMoreButton(div) {
     if (!isTrash) {
         moreDiv.querySelector(`#rename-${id}`).addEventListener('click', renameFileFolder)
         moreDiv.querySelector(`#trash-${id}`).addEventListener('click', trashFileFolder)
+        moreDiv.querySelector(`#move-${id}`).addEventListener('click', moveFileFolder)
+        moreDiv.querySelector(`#copy-${id}`).addEventListener('click', copyFileFolder)
         try {
             moreDiv.querySelector(`#share-${id}`).addEventListener('click', shareFile)
         }
@@ -121,8 +123,33 @@ document.getElementById('rename-create').addEventListener('click', async () => {
     }
 });
 
-
 // Rename File Folder End
+
+// Move File Folder Start
+function moveFileFolder() {
+    const id = this.getAttribute('id').split('-')[1]
+    const itemPath = document.getElementById(`more-option-${id}`).getAttribute('data-path') + '/' + id
+    const itemName = document.getElementById(`more-option-${id}`).getAttribute('data-name')
+    
+    // Close the more options menu first
+    closeMoreBtnFocus.call(this.parentElement.querySelector('.more-options-focus'))
+    
+    // Show move modal
+    showMoveModal(itemPath, itemName)
+}
+
+// Copy File Folder Start
+function copyFileFolder() {
+    const id = this.getAttribute('id').split('-')[1]
+    const itemPath = document.getElementById(`more-option-${id}`).getAttribute('data-path') + '/' + id
+    const itemName = document.getElementById(`more-option-${id}`).getAttribute('data-name')
+    
+    // Close the more options menu first
+    closeMoreBtnFocus.call(this.parentElement.querySelector('.more-options-focus'))
+    
+    // Show copy modal
+    showCopyModal(itemPath, itemName)
+}
 
 async function trashFileFolder() {
     const id = this.getAttribute('id').split('-')[1]
