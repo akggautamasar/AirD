@@ -45,6 +45,11 @@ function showDirectory(data) {
             openMoreButton(div)
         });
     });
+
+    // Update breadcrumb after showing directory
+    if (window.updateBreadcrumb) {
+        window.updateBreadcrumb();
+    }
 }
 
 document.getElementById('search-form').addEventListener('submit', async (event) => {
@@ -69,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (getCurrentPath().includes('/share_')) {
-        getCurrentDirectory()
+        getCurrentDirectoryWithSort()
     } else {
         if (getPassword() === null) {
             document.getElementById('bg-blur').style.zIndex = '2';
@@ -78,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('get-password').style.zIndex = '3';
             document.getElementById('get-password').style.opacity = '1';
         } else {
-            getCurrentDirectory()
+            getCurrentDirectoryWithSort()
         }
     }
 });

@@ -341,6 +341,73 @@
     background-color: #388e3c !important;
 }
 
+/* Breadcrumb Navigation */
+.breadcrumb-container {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 0 5px;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 10px 15px;
+    background-color: #fff;
+    border-radius: 20px;
+    border: 1px solid #e0e0e0;
+    font-size: 0.9rem;
+    color: #444746;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.breadcrumb-item:hover {
+    background-color: #f0f0f0;
+}
+
+.breadcrumb-item.current {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-weight: 500;
+    cursor: default;
+}
+
+.breadcrumb-item.current:hover {
+    background-color: #e3f2fd;
+}
+
+.breadcrumb-separator {
+    color: #999;
+    margin: 0 2px;
+    font-size: 0.8rem;
+}
+
+.breadcrumb-home {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.breadcrumb-home svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
 /* Sort Controls */
 .sort-controls {
     display: flex;
@@ -840,6 +907,22 @@
         width: 100%;
         margin-bottom: 5px;
     }
+
+    /* Breadcrumb mobile styles */
+    .breadcrumb {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .breadcrumb-item {
+        padding: 3px 6px;
+        max-width: 100px;
+    }
+
+    .breadcrumb-home svg {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -885,6 +968,17 @@
     .sort-select {
         width: 100%;
     }
+
+    /* Breadcrumb very small mobile */
+    .breadcrumb {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .breadcrumb-item {
+        max-width: 80px;
+        padding: 2px 4px;
+    }
 }
 
 /* Landscape mobile adjustments */
@@ -912,5 +1006,10 @@
     
     .sidebar-menu a {
         min-height: 48px;
+    }
+
+    .breadcrumb-item {
+        min-height: 36px;
+        padding: 6px 10px;
     }
 }
