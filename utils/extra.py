@@ -11,7 +11,7 @@ from utils.logger import Logger
 logger = Logger(__name__)
 
 
-def convert_class_to_dict(data, isObject, showtrash=False):
+def convert_class_to_dict(data, isObject, showtrash=False, sort_by="date", sort_order="desc"):
     if isObject == True:
         data = data.__dict__.copy()
     new_data = {"contents": {}}
@@ -37,7 +37,45 @@ def convert_class_to_dict(data, isObject, showtrash=False):
                     "path": file.path,
                     "upload_date": file.upload_date,
                 }
+    
+    # Sort the contents
+    sorted_contents = sort_directory_contents(new_data["contents"], sort_by, sort_order)
+    new_data["contents"] = sorted_contents
+    
     return new_data
+
+
+def sort_directory_contents(contents, sort_by="date", sort_order="desc"):
+    """Sort directory contents by specified criteria"""
+    
+    # Convert to list of tuples for sorting
+    items = list(contents.items())
+    
+    # Separate folders and files
+    folders = [(k, v) for k, v in items if v["type"] == "folder"]
+    files = [(k, v) for k, v in items if v["type"] == "file"]
+    
+    # Define sorting functions
+    def get_sort_key(item):
+        key, value = item
+        if sort_by == "name":
+            return value["name"].lower()
+        elif sort_by == "size":
+            return value.get("size", 0) if value["type"] == "file" else 0
+        else:  # date
+            return value["upload_date"]
+    
+    # Sort folders and files separately
+    reverse_order = (sort_order == "desc")
+    folders.sort(key=get_sort_key, reverse=reverse_order)
+    files.sort(key=get_sort_key, reverse=reverse_order)
+    
+    # Combine back into dictionary (folders first, then files)
+    sorted_contents = {}
+    for key, value in folders + files:
+        sorted_contents[key] = value
+    
+    return sorted_contents
 
 
 async def auto_ping_website():
