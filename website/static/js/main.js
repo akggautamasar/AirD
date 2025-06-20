@@ -5,15 +5,8 @@ function showDirectory(data) {
 
     let html = ''
 
-    // Step 2: Sort the array based on the 'date' values
-    let entries = Object.entries(data);
-    let folders = entries.filter(([key, value]) => value.type === 'folder');
-    let files = entries.filter(([key, value]) => value.type === 'file');
-
-    folders.sort((a, b) => new Date(b[1].upload_date) - new Date(a[1].upload_date));
-    files.sort((a, b) => new Date(b[1].upload_date) - new Date(a[1].upload_date));
-
-    for (const [key, item] of folders) {
+    // The data is already sorted by the server, so we just need to render it
+    for (const [key, item] of Object.entries(data)) {
         if (item.type === 'folder') {
             html += `<tr data-path="${item.path}" data-id="${item.id}" class="body-tr folder-tr"><td><div class="td-align"><img src="static/assets/folder-solid-icon.svg">${item.name}</div></td><td><div class="td-align"></div></td><td><div class="td-align"><a data-id="${item.id}" class="more-btn"><img src="static/assets/more-icon.svg" class="rotate-90"></a></div></td></tr>`
 
@@ -21,13 +14,9 @@ function showDirectory(data) {
                 html += `<div data-path="${item.path}" id="more-option-${item.id}" data-name="${item.name}" class="more-options"><input class="more-options-focus" readonly="readonly" style="height:0;width:0;border:none;position:absolute"><div id="restore-${item.id}" data-path="${item.path}"><img src="static/assets/load-icon.svg"> Restore</div><hr><div id="delete-${item.id}" data-path="${item.path}"><img src="static/assets/trash-icon.svg"> Delete</div></div>`
             }
             else {
-                html += `<div data-path="${item.path}" id="more-option-${item.id}" data-name="${item.name}" class="more-options"><input class="more-options-focus" readonly="readonly" style="height:0;width:0;border:none;position:absolute"><div id="rename-${item.id}"><img src="static/assets/pencil-icon.svg"> Rename</div><hr><div id="trash-${item.id}"><img src="static/assets/trash-icon.svg"> Trash</div><hr><div id="folder-share-${item.id}"><img src="static/assets/share-icon.svg"> Share</div></div>`
+                html += `<div data-path="${item.path}" id="more-option-${item.id}" data-name="${item.name}" class="more-options"><input class="more-options-focus" readonly="readonly" style="height:0;width:0;border:none;position:absolute"><div id="rename-${item.id}"><img src="static/assets/pencil-icon.svg"> Rename</div><hr><div id="move-${item.id}"><img src="static/assets/upload-icon.svg"> Move</div><hr><div id="copy-${item.id}"><img src="static/assets/file-icon.svg"> Copy</div><hr><div id="trash-${item.id}"><img src="static/assets/trash-icon.svg"> Trash</div><hr><div id="folder-share-${item.id}"><img src="static/assets/share-icon.svg"> Share</div></div>`
             }
-        }
-    }
-
-    for (const [key, item] of files) {
-        if (item.type === 'file') {
+        } else if (item.type === 'file') {
             const size = convertBytes(item.size)
             html += `<tr data-path="${item.path}" data-id="${item.id}" data-name="${item.name}" class="body-tr file-tr"><td><div class="td-align"><img src="static/assets/file-icon.svg">${item.name}</div></td><td><div class="td-align">${size}</div></td><td><div class="td-align"><a data-id="${item.id}" class="more-btn"><img src="static/assets/more-icon.svg" class="rotate-90"></a></div></td></tr>`
 
@@ -35,7 +24,7 @@ function showDirectory(data) {
                 html += `<div data-path="${item.path}" id="more-option-${item.id}" data-name="${item.name}" class="more-options"><input class="more-options-focus" readonly="readonly" style="height:0;width:0;border:none;position:absolute"><div id="restore-${item.id}" data-path="${item.path}"><img src="static/assets/load-icon.svg"> Restore</div><hr><div id="delete-${item.id}" data-path="${item.path}"><img src="static/assets/trash-icon.svg"> Delete</div></div>`
             }
             else {
-                html += `<div data-path="${item.path}" id="more-option-${item.id}" data-name="${item.name}" class="more-options"><input class="more-options-focus" readonly="readonly" style="height:0;width:0;border:none;position:absolute"><div id="rename-${item.id}"><img src="static/assets/pencil-icon.svg"> Rename</div><hr><div id="trash-${item.id}"><img src="static/assets/trash-icon.svg"> Trash</div><hr><div id="share-${item.id}"><img src="static/assets/share-icon.svg"> Share</div></div>`
+                html += `<div data-path="${item.path}" id="more-option-${item.id}" data-name="${item.name}" class="more-options"><input class="more-options-focus" readonly="readonly" style="height:0;width:0;border:none;position:absolute"><div id="rename-${item.id}"><img src="static/assets/pencil-icon.svg"> Rename</div><hr><div id="move-${item.id}"><img src="static/assets/upload-icon.svg"> Move</div><hr><div id="copy-${item.id}"><img src="static/assets/file-icon.svg"> Copy</div><hr><div id="trash-${item.id}"><img src="static/assets/trash-icon.svg"> Trash</div><hr><div id="share-${item.id}"><img src="static/assets/share-icon.svg"> Share</div></div>`
             }
         }
     }
@@ -80,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (getCurrentPath().includes('/share_')) {
-        getCurrentDirectory()
+        getCurrentDirectoryWithSort()
     } else {
         if (getPassword() === null) {
             document.getElementById('bg-blur').style.zIndex = '2';
@@ -89,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('get-password').style.zIndex = '3';
             document.getElementById('get-password').style.opacity = '1';
         } else {
-            getCurrentDirectory()
+            getCurrentDirectoryWithSort()
         }
     }
 });
