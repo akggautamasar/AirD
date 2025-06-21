@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer - AirDrive</title>
+    <link rel="stylesheet" href="/static/css/home.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        .pdf-container {
+            width: 100%;
+            height: calc(100vh - 100px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8fafd;
+            padding: 20px;
+            overflow: hidden;
+        }
+        #pdf-canvas {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .pdf-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .pdf-controls button {
+            padding: 10px 20px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #0b57d0;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .pdf-controls button:hover {
+            background-color: #edf1fa;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        @media (max-width: 768px) {
+            .pdf-container {
+                padding: 15px;
+                height: calc(100vh - 120px);
+            }
+            .pdf-controls {
+                gap: 8px;
+            }
+            .pdf-controls button {
+                padding: 8px 16px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-container">
+        <div class="pdf-controls">
+            <button onclick="copyStreamURL()">Copy Stream URL</button>
+            <button onclick="copyDownloadURL()">Copy Download URL</button>
+            <button onclick="openDownloadURL()">Open Download URL</button>
+            <button onclick="exportPDF()">Export PDF</button>
+        </div>
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+
+    <script>
+        // Initialize pdf.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        // Get file path from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const path = urlParams.get('path');
+
+        // Construct file URL using /file endpoint
+        const fileURL = `/file?path=${encodeURIComponent(path)}`;
+
+        // Load and render PDF
+        async function loadPDF() {
+            try {
+                const pdf = await pdfjsLib.getDocument(fileURL).promise;
+                const page = await pdf.getPage(1); // Render first page
+                const viewport = page.getViewport({ scale: 1.0 });
+                const canvas = document.getElementById('pdf-canvas');
+                const context = canvas.getContext('2d');
+
+                // Adjust canvas size
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Render PDF page
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                alert('Failed to load PDF. Please try again.');
+            }
+        }
+
+        // Copy Stream URL
+        function copyStreamURL() {
+            navigator.clipboard.writeText(fileURL).then(() => {
+                alert('Stream URL copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy URL.');
+            });
+        }
+
+        // Copy Download URL
+        function copyDownloadURL() {
+            navigator.clipboard.writeText(fileURL).then(() => {
+                alert('Download URL copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy URL.');
+            });
+        }
+
+        // Open Download URL
+        function openDownloadURL() {
+            window.open(fileURL, '_blank');
+        }
+
+        // Export (Download) PDF
+        function exportPDF() {
+            const link = document.createElement('a');
+            link.href = fileURL;
+            link.download = path.split('/').pop(); // Use file name from path
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Load PDF on page load
+        window.onload = loadPDF;
+    </script>
+</body>
+</html>
