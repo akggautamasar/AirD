@@ -838,7 +838,8 @@
     }
 
     .main-content {
-        padding: 70px 15px 15px 15px;
+        /* Adjusted padding to account for mobile menu toggle and better overall spacing */
+        padding: 70px 15px 15px 15px; 
         width: 100%;
         overflow-x: hidden;
     }
@@ -885,14 +886,18 @@
     }
 
     .directory table tr td {
-        padding: 0 10px;
-        height: 50px;
+        /* Reduced vertical padding for more rows to be visible */
+        padding: 8px 10px; 
+        height: auto; /* Allow height to adjust based on content */
+        min-height: 50px; /* Ensure a minimum touch target height */
     }
 
     .directory .td-align {
         min-height: 50px;
-        word-break: break-word;
+        word-break: break-word; /* Allow long names to wrap */
         overflow-wrap: break-word;
+        line-height: 1.3; /* Slightly tighter line height for wrapped text */
+        white-space: normal; /* Allow text to wrap */
     }
 
     .directory .td-align img {
@@ -924,6 +929,12 @@
     .directory table tr td:nth-child(4) {
         width: 50px;
         min-width: 50px;
+    }
+    
+    /* Ensure more button is always visible */
+    .directory .more-btn {
+        min-width: 44px; /* Minimum touch target size */
+        min-height: 44px;
     }
 
     /* Adjust modal sizes for mobile */
@@ -1031,6 +1042,7 @@
 
     .directory table tr th:nth-child(2),
     .directory table tr td:nth-child(2) {
+        /* Adjusted width and padding for file name on smaller phones */
         width: auto;
         min-width: 100px;
         padding: 0 8px;
@@ -1102,6 +1114,13 @@
     .main-content {
         padding: 60px 15px 15px 15px;
     }
+    /* Adjust table row height for landscape to fit more content */
+    .directory table tr td {
+        height: 40px; /* Make rows a bit shorter */
+        min-height: 40px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
 }
 
 /* Touch-friendly improvements */
@@ -1142,7 +1161,8 @@ html, body {
 }
 
 /* Ensure text doesn't cause overflow */
-.directory .td-align {
+/* This rule is now more targeted and specific for non-mobile sizes */
+.directory .td-align:not(td:nth-child(2) .td-align) {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
@@ -1157,3 +1177,4 @@ html, body {
         line-height: 1.2;
     }
 }
+
