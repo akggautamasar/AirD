@@ -20,7 +20,7 @@ function openFile() {
                fileName.endsWith('.ogv')) {
         // Open videos in stream endpoint
         const streamPath = `/file?path=${encodeURIComponent(path)}`;
-        window.open(`/stream?url=${encodeURIComponent(getRootUrl() + streamPath)}`, '_blank');
+        window.open(`/website/VideoPlayer.html?url=${encodeURIComponent(getRootUrl() + streamPath)}`, '_blank');
     } else {
         // Other files trigger download
         const filePath = `/file?path=${encodeURIComponent(path)}`;
