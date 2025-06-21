@@ -23,10 +23,10 @@
     transform: rotate(90deg);
 }
 
-/* Mobile Menu Toggle */
+/* Mobile Menu Toggle - Now part of the main header flow on mobile */
 .mobile-menu-toggle {
-    display: none;
-    position: fixed;
+    display: none; /* Default to hidden for desktop */
+    position: fixed; /* Keep fixed for default mobile toggle behavior outside flexbox */
     top: 15px;
     left: 15px;
     z-index: 1000;
@@ -821,53 +821,72 @@
         overflow-x: hidden;
     }
 
+    /* Mobile Menu Toggle - Positioned within header now */
     .mobile-menu-toggle {
-        display: block;
-    }
-
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        z-index: 200;
-        transform: translateX(-100%);
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-        width: 280px;
-    }
-
-    .sidebar.open {
-        transform: translateX(0);
+        display: block; /* Always show on mobile */
+        position: static; /* Remove fixed positioning to flow with flexbox */
+        margin-right: 10px; /* Space from search bar */
+        top: auto; /* Reset top */
+        left: auto; /* Reset left */
+        z-index: auto; /* Reset z-index */
+        box-shadow: none; /* Remove shadow to integrate better */
+        background: transparent; /* Transparent background */
+        border: none; /* No border */
     }
 
     .main-content {
-        /* Adjusted padding to account for mobile menu toggle and better overall spacing */
-        padding: 70px 15px 15px 15px; 
+        /* Reduced top padding as mobile-menu-toggle is now inline with header */
+        padding: 15px 15px 15px 15px; 
         width: 100%;
         overflow-x: hidden;
     }
 
     .main-content .header {
-        flex-direction: column;
-        gap: 15px;
-        align-items: stretch;
-        /* Ensure header (search/sort) doesn't push breadcrumb too far */
-        margin-bottom: 10px; /* Reduced header bottom margin */
+        flex-direction: row; /* Keep elements in a row */
+        justify-content: space-between; /* Distribute items */
+        align-items: center; /* Vertically align items */
+        gap: 8px; /* Compact gap between elements */
+        margin-bottom: 5px; /* Reduced header bottom margin to bring breadcrumb closer */
+        flex-wrap: nowrap; /* Prevent wrapping of header elements */
+    }
+
+    #search-form {
+        flex: 1; /* Allow search bar to take available space */
+        min-width: 100px; /* Smaller min-width for very compact screens */
     }
 
     .search-bar {
-        padding: 10px 15px;
-        width: 100%;
+        padding: 8px 12px; /* More compact search bar */
+        min-height: 40px; /* Smaller min-height */
+    }
+
+    .search-bar img {
+        width: 18px; /* Slightly smaller search icon */
+        height: 18px;
+        margin-right: 8px;
+    }
+
+    .search-bar input {
+        font-size: 0.9rem; /* Smaller font size for search input */
     }
 
     .sort-controls {
-        justify-content: center;
-        width: 100%;
+        flex-direction: row; /* Keep sort controls in a row */
+        gap: 8px; /* Compact gap */
+        justify-content: flex-end; /* Align to the right */
+        flex-shrink: 0; /* Prevent shrinking */
     }
 
     .sort-select {
-        flex: 1;
-        max-width: 200px;
+        padding: 6px 10px; /* More compact sort select */
+        font-size: 0.85rem;
+        max-width: 120px; /* Limit width */
+    }
+
+    .sort-order-btn {
+        width: 32px; /* Smaller sort button */
+        height: 32px;
+        padding: 6px;
     }
 
     .directory {
@@ -886,61 +905,62 @@
     }
 
     .directory table tr th {
-        padding: 10px 10px; /* Slightly more compact header cells */
-        font-size: 0.8rem;
+        padding: 8px 10px; /* Even more compact header cells */
+        font-size: 0.75rem;
     }
 
     .directory table tr td {
         /* Further reduced vertical padding for more rows to be visible */
-        padding: 4px 10px; /* Reduced even more for compactness */
+        padding: 3px 10px; /* Reduced even more for compactness */
         height: auto; /* Allow height to adjust based on content */
-        min-height: 44px; /* Minimum touch target height, slightly smaller */
+        min-height: 40px; /* Further reduced min-height for more density */
     }
 
     .directory .td-align {
-        min-height: 44px; /* Match td min-height */
+        min-height: 40px; /* Match td min-height */
         word-break: break-word; /* Allow long names to wrap */
         overflow-wrap: break-word;
-        line-height: 1.2; /* Tighter line height for wrapped text */
+        line-height: 1.1; /* Even tighter line height for wrapped text */
         white-space: normal; /* Allow text to wrap */
+        font-size: 0.85rem; /* Slightly smaller font for file names */
     }
 
     .directory .td-align img {
-        width: 18px; /* Slightly smaller icons */
-        height: 18px;
-        margin-right: 6px; /* Reduced margin */
+        width: 16px; /* Smaller icons */
+        height: 16px;
+        margin-right: 5px; /* Reduced margin */
     }
 
-    /* Mobile column widths */
+    /* Mobile column widths - adjust slightly for new density */
     .directory table tr th:first-child,
     .directory table tr td:first-child {
-        width: 35px;
-        min-width: 35px;
+        width: 30px; /* Even narrower checkbox column */
+        min-width: 30px;
     }
 
     .directory table tr th:nth-child(2),
     .directory table tr td:nth-child(2) {
         width: auto;
-        min-width: 120px;
+        min-width: 100px; /* Ensure file name has enough space */
     }
 
     .directory table tr th:nth-child(3),
     .directory table tr td:nth-child(3) {
-        width: 80px;
-        min-width: 70px;
+        width: 70px;
+        min-width: 60px;
     }
 
     .directory table tr th:nth-child(4),
     .directory table tr td:nth-child(4) {
-        width: 50px;
-        min-width: 50px;
+        width: 40px;
+        min-width: 40px;
     }
     
     /* Ensure more button is always visible and has sufficient touch target */
     .directory .more-btn {
         padding: 8px; 
-        min-width: 44px; 
-        min-height: 44px;
+        min-width: 40px; /* Slightly reduced min-width */
+        min-height: 40px; /* Slightly reduced min-height */
     }
 
     /* Adjust modal sizes for mobile */
@@ -1008,75 +1028,130 @@
         margin-bottom: 5px;
     }
 
-    /* Breadcrumb mobile styles */
+    /* Breadcrumb mobile styles - Now immediately below the main header */
     .breadcrumb-container {
-        /* Important: Ensure it's not hidden by overflow and has a background */
-        position: relative; /* Ensure z-index works if needed */
-        z-index: 5; /* Ensure it's above table but below modals */
-        padding: 8px 15px; /* Increased horizontal padding for better visibility */
-        margin-bottom: 5px; /* Greatly reduced space */
-        background-color: #f8fafd; /* Match main content background to blend in */
-        border-radius: 10px; /* Softer edges */
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Subtle shadow */
-        min-height: 40px; /* Ensure it has a minimum height */
+        position: relative;
+        z-index: 5;
+        padding: 8px 15px;
+        margin-bottom: 0px; /* Crucially reduced to 0 to eliminate gap */
+        background-color: #f8fafd;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        min-height: 38px; /* Slightly reduced height for compactness */
+        margin-top: -5px; /* Pull it up slightly if needed to remove visual gap from header */
     }
 
     .breadcrumb {
-        padding: 0; /* Remove internal padding as container has it */
-        font-size: 0.85rem; /* Slightly larger font for readability */
-        border: none; /* Remove border to reduce visual clutter */
-        box-shadow: none; /* Remove shadow to blend better */
-        background-color: transparent; /* Ensure transparent background */
-        gap: 3px; /* Reduced gap between items */
+        padding: 0;
+        font-size: 0.85rem;
+        border: none;
+        box-shadow: none;
+        background-color: transparent;
+        gap: 3px;
     }
 
     .breadcrumb-item {
-        padding: 2px 6px; /* Further refined padding for items */
-        max-width: 90px; /* Slightly more aggressive truncation */
+        padding: 2px 6px;
+        max-width: 90px;
     }
 
     .breadcrumb-home svg {
-        width: 12px; /* Smaller home icon */
+        width: 12px;
         height: 12px;
     }
     .breadcrumb-separator {
-        font-size: 0.7rem; /* Smaller separator */
+        font-size: 0.7rem;
+    }
+
+    /* Adjust selection toolbar to ensure it integrates well with new header */
+    .selection-toolbar {
+        margin-top: 5px; /* Add slight margin from breadcrumb if needed, or remove */
+        margin-bottom: 10px; /* Reduce space below toolbar */
+        /* Ensure it sits below the breadcrumb and uses available width */
+        width: calc(100% - 30px); /* Account for main-content padding */
+        left: 15px;
+        right: 15px;
     }
 }
 
 @media (max-width: 480px) {
     .main-content {
-        padding: 70px 10px 10px 10px;
+        padding: 10px 10px 10px 10px; /* Even tighter padding for very small screens */
+    }
+
+    .main-content .header {
+        gap: 6px; /* Even smaller gap */
+        margin-bottom: 3px; /* Minimal margin */
+    }
+
+    .search-bar {
+        padding: 6px 10px; /* Very compact search bar */
+        min-height: 36px; /* Very small min-height */
+    }
+
+    .search-bar img {
+        width: 16px;
+        height: 16px;
+        margin-right: 6px;
+    }
+
+    .search-bar input {
+        font-size: 0.8rem;
+    }
+
+    .sort-select {
+        padding: 4px 8px; /* Very compact sort select */
+        font-size: 0.8rem;
+        max-width: 100px;
+    }
+
+    .sort-order-btn {
+        width: 28px; /* Even smaller sort button */
+        height: 28px;
+        padding: 4px;
     }
 
     .directory table tr th:first-child,
     .directory table tr td:first-child {
-        width: 30px;
-        min-width: 30px;
-        padding: 0 5px;
+        width: 25px; /* Very narrow checkbox column */
+        min-width: 25px;
+        padding: 0 3px;
     }
 
     .directory table tr th:nth-child(2),
     .directory table tr td:nth-child(2) {
-        /* Adjusted width and padding for file name on smaller phones */
         width: auto;
-        min-width: 100px;
-        padding: 0 8px;
+        min-width: 80px; /* Reduced min-width for file name */
+        padding: 0 5px;
     }
 
     .directory table tr th:nth-child(3),
     .directory table tr td:nth-child(3) {
-        width: 70px;
-        min-width: 60px;
-        padding: 0 5px;
-        font-size: 0.75rem;
+        width: 60px;
+        min-width: 50px;
+        padding: 0 3px;
+        font-size: 0.7rem;
     }
 
     .directory table tr th:nth-child(4),
     .directory table tr td:nth-child(4) {
-        width: 40px;
-        min-width: 40px;
-        padding: 0 5px;
+        width: 35px;
+        min-width: 35px;
+        padding: 0 3px;
+    }
+
+    .directory table tr td {
+        padding: 2px 5px; /* Minimal padding */
+        min-height: 36px; /* Even smaller min-height */
+    }
+    .directory .td-align {
+        min-height: 36px;
+        font-size: 0.75rem;
+    }
+    .directory .td-align img {
+        width: 14px;
+        height: 14px;
+        margin-right: 3px;
     }
 
     .create-new-folder {
@@ -1103,53 +1178,64 @@
     }
 
     /* Breadcrumb very small mobile */
+    .breadcrumb-container {
+        padding: 5px 10px; /* Slightly less padding */
+        min-height: 34px; /* Even smaller min-height */
+    }
     .breadcrumb {
-        padding: 0; /* No padding */
-        font-size: 0.7rem; /* Even smaller font */
+        font-size: 0.65rem; /* Even smaller font */
     }
 
     .breadcrumb-item {
-        max-width: 60px; /* More aggressive truncation for tiny screens */
-        padding: 1px 3px; /* Minimal padding */
+        max-width: 50px; /* More aggressive truncation for tiny screens */
+        padding: 0px 2px; /* Minimal padding */
     }
 
-    /* File/folder names truncation for very small screens */
-    .directory .td-align {
-        font-size: 0.75rem; /* Slightly smaller font for file names */
+    .selection-toolbar {
+        padding: 5px 10px; /* More compact toolbar */
+        gap: 4px; /* Reduced gap */
+        width: calc(100% - 20px); /* Account for tighter main-content padding */
+        left: 10px;
+        right: 10px;
     }
 
-    .directory .td-align img {
-        width: 16px; /* Even smaller icons */
-        height: 16px;
-        margin-right: 4px; /* Reduced margin */
+    .selection-btn {
+        font-size: 0.7rem; /* Smaller font for buttons */
+        padding: 6px 8px;
     }
 }
 
 /* Landscape mobile adjustments */
 @media (max-width: 768px) and (orientation: landscape) {
     .main-content {
-        padding: 60px 15px 15px 15px;
+        padding: 10px 15px 10px 15px; /* Adjusted padding for landscape */
+    }
+    .main-content .header {
+        margin-bottom: 5px; /* Minimal space */
+    }
+    .breadcrumb-container {
+        margin-bottom: 0px; /* No space */
     }
     /* Adjust table row height for landscape to fit more content */
     .directory table tr td {
-        height: 36px; /* Make rows even shorter for landscape */
-        min-height: 36px;
-        padding-top: 2px;
-        padding-bottom: 2px;
+        height: 30px; /* Even more compact rows for landscape */
+        min-height: 30px;
+        padding-top: 1px;
+        padding-bottom: 1px;
     }
     .directory .td-align {
-        min-height: 36px;
+        min-height: 30px;
     }
 }
 
-/* Touch-friendly improvements */
+/* Touch-friendly improvements - ensure these remain for all mobile sizes */
 @media (hover: none) and (pointer: coarse) {
     .directory .body-tr {
-        min-height: 50px; /* Keep minimum height for easy tapping */
+        min-height: 48px; /* Maintain good touch target for rows */
     }
     
     .directory .more-btn {
-        padding: 12px;
+        padding: 10px; /* Ensure good touch target */
         min-width: 44px;
         min-height: 44px;
     }
@@ -1165,6 +1251,14 @@
     .breadcrumb-item {
         min-height: 36px;
         padding: 6px 10px;
+    }
+
+    .search-bar, .sort-select, .sort-order-btn {
+        min-height: 44px; /* Ensure main header elements are easily tappable */
+    }
+
+    .selection-btn {
+        min-height: 44px; /* Ensure selection buttons are easily tappable */
     }
 }
 
