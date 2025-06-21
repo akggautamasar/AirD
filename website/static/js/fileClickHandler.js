@@ -10,11 +10,11 @@ function openFolder() {
 
 function openFile() {
     const fileName = this.getAttribute('data-name').toLowerCase();
-    const path = this.getAttribute('data-path') + '/' + this.getAttribute('data-id');
+    const path = this.getAttribute('data-path') + '/' + this.getAttribute('data-name') + '/' + this.getAttribute('data-id');
 
     if (fileName.endsWith('.pdf')) {
         // Open PDF in PDFViewer.html
-        window.location.href = `/PDFViewer.html?path=${encodeURIComponent(path)}`;
+        window.location.href = `/website/PDFViewer.html?path=${encodeURIComponent(path)}`;
     } else if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || 
                fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || 
                fileName.endsWith('.ogv')) {
