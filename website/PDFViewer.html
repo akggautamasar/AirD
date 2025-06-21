@@ -79,9 +79,10 @@
         // Get file path from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const path = urlParams.get('path');
+        const password = localStorage.getItem('password') || '';
 
         // Construct file URL using /file endpoint
-        const fileURL = `/file?path=${encodeURIComponent(path)}`;
+        const fileURL = `/file?path=${encodeURIComponent(path)}&password=${encodeURIComponent(password)}`;
 
         // Load and render PDF
         async function loadPDF() {
@@ -103,7 +104,7 @@
                 }).promise;
             } catch (error) {
                 console.error('Error loading PDF:', error);
-                alert('Failed to load PDF. Please try again.');
+                alert('Failed to load PDF: ' + error.message);
             }
         }
 
@@ -134,7 +135,7 @@
         function exportPDF() {
             const link = document.createElement('a');
             link.href = fileURL;
-            link.download = path.split('/').pop(); // Use file name from path
+            link.download = path.split('/').slice(-2, -1)[0]; // Use filename before ID
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
