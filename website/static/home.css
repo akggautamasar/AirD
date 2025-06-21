@@ -629,7 +629,7 @@
     justify-content: start;
     align-items: start;
     background-color: #f8fafd;
-    overflow-x: auto;
+    overflow: hidden;
 }
 
 .main-content .header {
@@ -691,7 +691,6 @@
 .directory table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 600px;
 }
 
 .directory table tr th {
@@ -764,8 +763,10 @@
 
 /* Table responsive wrapper */
 .table-wrapper {
-    overflow-x: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     flex: 1;
+    width: 100%;
 }
 
 /* Mobile Styles */
@@ -796,6 +797,7 @@
     .main-content {
         padding: 70px 15px 15px 15px;
         width: 100%;
+        overflow: hidden;
     }
 
     .main-content .header {
@@ -814,32 +816,76 @@
 
     .directory {
         border-radius: 15px;
+        height: calc(100vh - 200px);
+        overflow: hidden;
+    }
+
+    .table-wrapper {
+        overflow-y: auto;
+        overflow-x: hidden;
+        height: 100%;
+        width: 100%;
+    }
+
+    .directory table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .directory table tr th:first-child,
+    .directory table tr td:first-child {
+        width: 60%;
+        min-width: 0;
+    }
+
+    .directory table tr th:nth-child(2),
+    .directory table tr td:nth-child(2) {
+        width: 25%;
+        min-width: 0;
+    }
+
+    .directory table tr th:nth-child(3),
+    .directory table tr td:nth-child(3) {
+        width: 15%;
+        min-width: 0;
+        text-align: center;
     }
 
     .directory table tr th {
-        padding: 12px 15px;
+        padding: 12px 8px;
         font-size: 0.8rem;
     }
 
     .directory table tr td {
-        padding: 0 15px;
+        padding: 0 8px;
         height: 50px;
     }
 
     .directory .td-align {
         min-height: 50px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .directory .td-align img {
         width: 20px;
         height: 20px;
-        margin-right: 10px;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+
+    .directory .more-btn {
+        padding: 8px;
+        margin: 0 auto;
     }
 
     /* File/folder names should wrap on mobile */
-    .directory .td-align {
-        word-break: break-word;
-        overflow-wrap: break-word;
+    .directory .td-align span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
     }
 
     /* Adjust modal sizes for mobile */
@@ -930,20 +976,23 @@
         padding: 70px 10px 10px 10px;
     }
 
-    .directory table {
-        min-width: 500px;
+    .directory {
+        height: calc(100vh - 180px);
+    }
+
+    .directory table tr th:first-child,
+    .directory table tr td:first-child {
+        width: 55%;
     }
 
     .directory table tr th:nth-child(2),
     .directory table tr td:nth-child(2) {
-        width: 80px;
-        min-width: 80px;
+        width: 30%;
     }
 
     .directory table tr th:nth-child(3),
     .directory table tr td:nth-child(3) {
-        width: 50px;
-        min-width: 50px;
+        width: 15%;
     }
 
     .create-new-folder {
@@ -985,6 +1034,10 @@
 @media (max-width: 768px) and (orientation: landscape) {
     .main-content {
         padding: 60px 15px 15px 15px;
+    }
+
+    .directory {
+        height: calc(100vh - 140px);
     }
 }
 
