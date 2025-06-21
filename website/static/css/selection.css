@@ -176,32 +176,38 @@
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .selection-toolbar {
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
+        /* Changed to flex-wrap to allow buttons to flow to next line if needed */
+        flex-direction: row; 
+        flex-wrap: wrap; 
+        gap: 8px; /* Increased gap slightly for better spacing */
+        justify-content: center; /* Center align items when wrapped */
         padding: 10px 15px;
-        overflow-x: visible;
+        overflow-x: hidden; /* Prevent horizontal scroll for the toolbar itself */
     }
     
     .selection-info {
         text-align: center;
         margin-right: 0;
         margin-bottom: 5px;
+        width: 100%; /* Make info span full width */
+        order: -1; /* Place info at the top */
     }
     
     .selection-actions {
         justify-content: center;
         gap: 6px;
-        flex-wrap: wrap;
-        overflow-x: visible;
+        flex-wrap: wrap; /* Ensure actions wrap */
+        overflow-x: visible; /* Let children overflow for wrapping, but container handles overall */
+        width: 100%; /* Take full width for wrapping */
+        padding-bottom: 0; /* No need for padding here if buttons wrap */
     }
     
     .selection-btn {
-        flex: 1;
-        min-width: 0;
+        flex: 1 1 auto; /* Allow buttons to grow and shrink, and wrap */
+        min-width: 80px; /* Minimum width for readability */
         font-size: 0.75rem;
         padding: 8px 6px;
-        max-width: calc(50% - 3px);
+        max-width: calc(50% - 3px); /* Max width for two buttons per row */
     }
     
     .directory table tr th:first-child,
@@ -239,12 +245,13 @@
     }
     
     .selection-actions {
-        flex-direction: column;
+        /* Changed to column for very small screens if needed, or keep wrap for larger touch targets */
+        flex-direction: column; 
         gap: 4px;
     }
     
     .selection-btn {
-        width: 100%;
+        width: 100%; /* Full width for very small screens */
         text-align: center;
         max-width: none;
         font-size: 0.8rem;
