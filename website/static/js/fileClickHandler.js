@@ -9,24 +9,16 @@ function openFolder() {
 }
 
 function openFile() {
-    const fileName = this.getAttribute('data-name').toLowerCase();
-    const path = this.getAttribute('data-path') + '/' + this.getAttribute('data-name') + '/' + this.getAttribute('data-id');
+    const fileName = this.getAttribute('data-name').toLowerCase()
+    let path = '/file?path=' + this.getAttribute('data-path') + '/' + this.getAttribute('data-id')
 
-    if (fileName.endsWith('.pdf')) {
-        // Open PDF in PDFViewer.html
-        window.location.href = `/website/PDFViewer.html?path=${encodeURIComponent(path)}`;
-    } else if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || 
-               fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || 
-               fileName.endsWith('.ogv')) {
-        // Open videos in stream endpoint
-        const streamPath = `/file?path=${encodeURIComponent(path)}`;
-        window.open(`/website/VideoPlayer.html?url=${encodeURIComponent(getRootUrl() + streamPath)}`, '_blank');
-    } else {
-        // Other files trigger download
-        const filePath = `/file?path=${encodeURIComponent(path)}`;
-        window.open(filePath, '_blank');
+    if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || fileName.endsWith('.ogv')) {
+        path = '/stream?url=' + getRootUrl() + path
     }
+
+    window.open(path, '_blank')
 }
+
 
 // File More Button Handler Start
 
@@ -224,10 +216,12 @@ async function shareFile() {
         link = `${root_url}/stream?url=${root_url}/file?path=${path}`
     } else {
         link = `${root_url}/file?path=${path}`
+
     }
 
     copyTextToClipboard(link)
 }
+
 
 async function shareFolder() {
     const id = this.getAttribute('id').split('-')[2]
@@ -244,4 +238,4 @@ async function shareFolder() {
     copyTextToClipboard(link)
 }
 
-// File More Button Handler End
+// File More Button Handler  End
