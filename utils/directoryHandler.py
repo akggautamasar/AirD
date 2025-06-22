@@ -338,14 +338,22 @@ class NewDriveData:
             tree = {
                 "id": folder.id,
                 "name": folder.name,
-                "path": current_path,
+                "path": current_path if current_path else "/",
                 "children": []
             }
             
+            # Sort folders by name for consistent ordering
+            folder_items = []
             for item in folder.contents.values():
                 if item.type == "folder" and not item.trash:
-                    child_path = f"{current_path}/{item.id}" if current_path else f"/{item.id}"
-                    tree["children"].append(build_tree(item, child_path))
+                    folder_items.append(item)
+            
+            # Sort by name
+            folder_items.sort(key=lambda x: x.name.lower())
+            
+            for item in folder_items:
+                child_path = f"{current_path}/{item.id}" if current_path != "/" else f"/{item.id}"
+                tree["children"].append(build_tree(item, child_path))
             
             return tree
         

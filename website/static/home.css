@@ -275,27 +275,36 @@
 /* Move/Copy Modal Styles */
 .folder-tree {
     width: 100%;
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
     border: 1px solid #e0e0e0;
     border-radius: 5px;
-    padding: 10px;
+    padding: 0;
     margin-bottom: 20px;
     background-color: #f9f9f9;
 }
 
 .folder-item {
-    padding: 8px 12px;
-    margin: 2px 0;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
+    display: block;
     font-size: 14px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
-.folder-item:hover {
+.folder-item:last-child {
+    border-bottom: none;
+}
+
+.folder-item-content {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    min-height: 36px;
+}
+
+.folder-item:hover:not(.disabled) {
     background-color: #e3f2fd;
 }
 
@@ -307,17 +316,55 @@
 .folder-item.disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    background-color: #f5f5f5;
 }
 
-.folder-item .folder-icon {
+.folder-item.disabled .folder-item-content {
+    color: #999;
+}
+
+.folder-toggle {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #666;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.folder-toggle-spacer {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.folder-icon {
     width: 16px;
     height: 16px;
     margin-right: 8px;
     fill: currentColor;
+    flex-shrink: 0;
 }
 
-.folder-indent {
-    margin-left: 20px;
+.folder-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.folder-children {
+    background-color: #fafafa;
+}
+
+.folder-item.expanded > .folder-item-content .folder-toggle {
+    color: #2196f3;
 }
 
 .move-copy-actions {
@@ -1016,7 +1063,26 @@
 
     /* Move/Copy modal adjustments */
     .folder-tree {
-        max-height: 200px;
+        max-height: 250px;
+        font-size: 13px;
+    }
+
+    .folder-item-content {
+        padding: 6px 8px;
+        min-height: 32px;
+    }
+
+    .folder-toggle,
+    .folder-toggle-spacer {
+        width: 14px;
+        height: 14px;
+        margin-right: 6px;
+    }
+
+    .folder-icon {
+        width: 14px;
+        height: 14px;
+        margin-right: 6px;
     }
 
     .move-copy-actions {
@@ -1203,6 +1269,31 @@
         font-size: 0.7rem; /* Smaller font for buttons */
         padding: 6px 8px;
     }
+
+    /* Move/Copy modal for very small screens */
+    .folder-tree {
+        max-height: 200px;
+        font-size: 12px;
+    }
+
+    .folder-item-content {
+        padding: 4px 6px;
+        min-height: 28px;
+    }
+
+    .folder-toggle,
+    .folder-toggle-spacer {
+        width: 12px;
+        height: 12px;
+        margin-right: 4px;
+        font-size: 10px;
+    }
+
+    .folder-icon {
+        width: 12px;
+        height: 12px;
+        margin-right: 4px;
+    }
 }
 
 /* Landscape mobile adjustments */
@@ -1225,6 +1316,11 @@
     }
     .directory .td-align {
         min-height: 30px;
+    }
+
+    /* Adjust folder tree for landscape */
+    .folder-tree {
+        max-height: 180px;
     }
 }
 
@@ -1260,6 +1356,16 @@
     .selection-btn {
         min-height: 44px; /* Ensure selection buttons are easily tappable */
     }
+
+    .folder-item-content {
+        min-height: 44px; /* Ensure folder items are easily tappable */
+        padding: 8px 12px;
+    }
+
+    .folder-toggle {
+        min-width: 24px;
+        min-height: 24px;
+    }
 }
 
 /* Prevent horizontal scroll on all elements */
@@ -1289,4 +1395,23 @@ html, body {
         overflow-wrap: break-word;
         line-height: 1.2;
     }
+}
+
+/* Scrollbar styling for folder tree */
+.folder-tree::-webkit-scrollbar {
+    width: 8px;
+}
+
+.folder-tree::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
