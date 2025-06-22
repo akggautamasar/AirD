@@ -408,6 +408,52 @@
     fill: currentColor;
 }
 
+/* File Count Stats */
+.file-count-stats {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 15px;
+    background-color: #fff;
+    border-radius: 20px;
+    border: 1px solid #e0e0e0;
+    font-size: 0.85rem;
+    color: #666;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.file-count-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.file-count-item:hover {
+    background-color: #e9ecef;
+}
+
+.file-count-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.file-count-number {
+    font-weight: 500;
+    color: #444746;
+}
+
+.file-count-label {
+    color: #666;
+    font-size: 0.8rem;
+}
+
 /* Sort Controls */
 .sort-controls {
     display: flex;
@@ -976,6 +1022,28 @@
         width: 14px;
         height: 14px;
     }
+
+    /* File count stats mobile */
+    .file-count-stats {
+        padding: 8px 12px;
+        gap: 10px;
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+    }
+
+    .file-count-item {
+        padding: 3px 6px;
+        gap: 3px;
+    }
+
+    .file-count-icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    .file-count-label {
+        font-size: 0.75rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1054,6 +1122,29 @@
         width: 120px;
         font-size: 12px;
         transform: translateX(-90%);
+    }
+
+    /* File count stats very small mobile */
+    .file-count-stats {
+        padding: 6px 10px;
+        gap: 8px;
+        font-size: 0.75rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .file-count-item {
+        padding: 2px 4px;
+        gap: 2px;
+    }
+
+    .file-count-icon {
+        width: 12px;
+        height: 12px;
+    }
+
+    .file-count-label {
+        font-size: 0.7rem;
     }
 }
 

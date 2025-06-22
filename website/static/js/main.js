@@ -50,6 +50,11 @@ function showDirectory(data) {
     if (window.updateBreadcrumb) {
         window.updateBreadcrumb();
     }
+
+    // Update file count after showing directory
+    if (window.updateFileCount) {
+        window.updateFileCount({ contents: data });
+    }
 }
 
 document.getElementById('search-form').addEventListener('submit', async (event) => {
