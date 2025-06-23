@@ -15,8 +15,11 @@ You can use this bot to upload files to your TG Drive website directly instead o
 🗄 **Commands:**
 /set_folder - Set folder for file uploads
 /current_folder - Check current folder
+/create_folder - Create a new folder in current directory
 
 📤 **How To Upload Files:** Send a file to this bot and it will be uploaded to your TG Drive website. You can also set a folder for file uploads using /set_folder command.
+
+📁 **How To Create Folders:** Use /create_folder command to create new folders in your current directory.
 
 Read more about [TG Drive's Bot Mode](https://github.com/TechShreyash/TGDrive#tg-drives-bot-mode)
 """
@@ -83,6 +86,182 @@ async def start_handler(client: Client, message: Message):
 
 
 @main_bot.on_message(
+    filters.command("create_folder")
+    & filters.private
+    & filters.user(config.TELEGRAM_ADMIN_IDS),
+)
+async def create_folder_handler(client: Client, message: Message):
+    """
+    Handles the /create_folder command to create new folders.
+    Supports /create_folder <folder_name> for direct creation,
+    or falls back to interactive mode if no argument provided.
+    """
+    global BOT_MODE, DRIVE_DATA
+
+    # Check if there's already a pending ask for this chat to prevent re-triggering
+    if message.chat.id in _pending_requests:
+        await message.reply_text("I'm already waiting for your input. Please provide the folder name or /cancel.")
+        return 
+
+    # Check if current folder is set
+    if not BOT_MODE.current_folder:
+        await message.reply_text(
+            "❌ **Error:** No current folder set. Please use /set_folder to set a folder first before creating new folders."
+        )
+        return
+
+    # Extract the argument from the command, if any
+    command_args = message.command
+    folder_name_from_command = None
+    if len(command_args) > 1:
+        folder_name_from_command = " ".join(command_args[1:]).strip()
+
+    target_folder_name = None
+    if folder_name_from_command:
+        # If a folder name was provided in the command, try to create it directly
+        logger.info(f"Attempting direct folder creation: '{folder_name_from_command}'")
+        
+        # Validate folder name
+        if not is_valid_folder_name(folder_name_from_command):
+            await message.reply_text(
+                "❌ **Invalid folder name!**\n\n"
+                "Folder names can only contain:\n"
+                "• Letters (a-z, A-Z)\n"
+                "• Numbers (0-9)\n"
+                "• Spaces, hyphens (-), underscores (_)\n"
+                "• Brackets [ ] ( )\n"
+                "• Some special characters: @ # ! $ % * + = { } : ; < > , . ? / | \\ ~ `"
+            )
+            return
+
+        # Check if folder already exists
+        current_folder_data = DRIVE_DATA.get_directory(BOT_MODE.current_folder)
+        for item in current_folder_data.contents.values():
+            if item.type == "folder" and item.name.lower() == folder_name_from_command.lower():
+                await message.reply_text(
+                    f"❌ **Folder already exists!**\n\n"
+                    f"A folder named '{folder_name_from_command}' already exists in the current directory.\n\n"
+                    f"**Current folder:** {BOT_MODE.current_folder_name}"
+                )
+                return
+
+        # Create the folder
+        try:
+            new_folder_path = DRIVE_DATA.new_folder(BOT_MODE.current_folder, folder_name_from_command)
+            await message.reply_text(
+                f"✅ **Folder created successfully!**\n\n"
+                f"**Folder name:** {folder_name_from_command}\n"
+                f"**Location:** {BOT_MODE.current_folder_name}\n"
+                f"**Full path:** {new_folder_path}"
+            )
+            logger.info(f"Folder '{folder_name_from_command}' created successfully at {new_folder_path}")
+            return
+        except Exception as e:
+            await message.reply_text(
+                f"❌ **Error creating folder!**\n\n"
+                f"Failed to create folder '{folder_name_from_command}': {str(e)}"
+            )
+            logger.error(f"Failed to create folder '{folder_name_from_command}': {e}")
+            return
+
+    # If no argument was provided, proceed with the interactive 'ask' process
+    while True:
+        try:
+            folder_name_input_msg = await manual_ask(
+                client=client,
+                chat_id=message.chat.id,
+                text=(
+                    f"📁 **Create New Folder**\n\n"
+                    f"**Current location:** {BOT_MODE.current_folder_name}\n\n"
+                    f"Please send the name for the new folder:\n\n"
+                    f"**Rules:**\n"
+                    f"• Use only letters, numbers, spaces, and basic symbols\n"
+                    f"• Avoid special characters like: < > : \" | ? * \\\n"
+                    f"• Maximum 255 characters\n\n"
+                    f"Send /cancel to cancel"
+                ),
+                timeout=60,
+                filters=filters.text,
+            )
+        except asyncio.TimeoutError:
+            await message.reply_text("⏰ **Timeout**\n\nFolder creation cancelled. Use /create_folder to try again.")
+            return
+
+        if folder_name_input_msg.text.lower() == "/cancel":
+            await message.reply_text("❌ **Cancelled**\n\nFolder creation cancelled.")
+            return
+
+        target_folder_name = folder_name_input_msg.text.strip()
+        
+        # Validate folder name
+        if not target_folder_name:
+            await message.reply_text("❌ **Empty name!** Please provide a valid folder name or /cancel.")
+            continue
+            
+        if not is_valid_folder_name(target_folder_name):
+            await message.reply_text(
+                "❌ **Invalid folder name!**\n\n"
+                "Folder names can only contain:\n"
+                "• Letters (a-z, A-Z)\n"
+                "• Numbers (0-9)\n"
+                "• Spaces, hyphens (-), underscores (_)\n"
+                "• Brackets [ ] ( )\n"
+                "• Some special characters: @ # ! $ % * + = { } : ; < > , . ? / | \\ ~ `\n\n"
+                "Please try again or /cancel."
+            )
+            continue
+
+        # Check if folder already exists
+        current_folder_data = DRIVE_DATA.get_directory(BOT_MODE.current_folder)
+        folder_exists = False
+        for item in current_folder_data.contents.values():
+            if item.type == "folder" and item.name.lower() == target_folder_name.lower():
+                folder_exists = True
+                break
+
+        if folder_exists:
+            await message.reply_text(
+                f"❌ **Folder already exists!**\n\n"
+                f"A folder named '{target_folder_name}' already exists in the current directory.\n"
+                f"Please choose a different name or /cancel."
+            )
+            continue
+
+        # Create the folder
+        try:
+            new_folder_path = DRIVE_DATA.new_folder(BOT_MODE.current_folder, target_folder_name)
+            await message.reply_text(
+                f"✅ **Folder created successfully!**\n\n"
+                f"**Folder name:** {target_folder_name}\n"
+                f"**Location:** {BOT_MODE.current_folder_name}\n"
+                f"**Full path:** {new_folder_path}"
+            )
+            logger.info(f"Folder '{target_folder_name}' created successfully at {new_folder_path}")
+            break
+        except Exception as e:
+            await message.reply_text(
+                f"❌ **Error creating folder!**\n\n"
+                f"Failed to create folder '{target_folder_name}': {str(e)}\n\n"
+                f"Please try again or /cancel."
+            )
+            logger.error(f"Failed to create folder '{target_folder_name}': {e}")
+            continue
+
+
+def is_valid_folder_name(name):
+    """
+    Validate folder name according to common file system restrictions.
+    """
+    if not name or len(name) > 255:
+        return False
+    
+    # Check for invalid characters (similar to the web interface validation)
+    import re
+    pattern = r'^[a-zA-Z0-9 \-_\\[\]()@#!$%*+={}:;<>,.?/|\\~`]*$'
+    return bool(re.match(pattern, name))
+
+
+@main_bot.on_message(
     filters.command("set_folder")
     & filters.private
     & filters.user(config.TELEGRAM_ADMIN_IDS),
@@ -137,7 +316,10 @@ async def set_folder_handler(client: Client, message: Message):
                 logger.error(f"Failed to save default folder config: {e}")
 
             await message.reply_text(
-                f"Folder Set Successfully To : {folder.name}\n\nNow you can send / forward files to me and it will be uploaded to this folder."
+                f"📁 **Folder Set Successfully!**\n\n"
+                f"**Current folder:** {folder.name}\n\n"
+                f"Now you can send/forward files to me and they will be uploaded to this folder.\n"
+                f"You can also use /create_folder to create new folders in this location."
             )
             return # Exit handler after direct setting
 
@@ -264,7 +446,10 @@ async def set_folder_callback(client: Client, callback_query: Message):
 
     await callback_query.answer(f"Folder Set Successfully To : {name}")
     await callback_query.message.edit(
-        f"Folder Set Successfully To : {name}\n\nNow you can send / forward files to me and it will be uploaded to this folder."
+        f"📁 **Folder Set Successfully!**\n\n"
+        f"**Current folder:** {name}\n\n"
+        f"Now you can send/forward files to me and they will be uploaded to this folder.\n"
+        f"You can also use /create_folder to create new folders in this location."
     )
 
 
@@ -279,7 +464,24 @@ async def current_folder_handler(client: Client, message: Message):
     """
     global BOT_MODE
 
-    await message.reply_text(f"Current Folder: {BOT_MODE.current_folder_name}")
+    if BOT_MODE.current_folder:
+        await message.reply_text(
+            f"📁 **Current Folder Information**\n\n"
+            f"**Folder:** {BOT_MODE.current_folder_name}\n"
+            f"**Path:** {BOT_MODE.current_folder}\n\n"
+            f"💡 **Available commands:**\n"
+            f"• Send files to upload them here\n"
+            f"• /create_folder - Create new folders\n"
+            f"• /set_folder - Change current folder"
+        )
+    else:
+        await message.reply_text(
+            f"❌ **No current folder set**\n\n"
+            f"Use /set_folder to set a folder first.\n\n"
+            f"💡 **Available commands:**\n"
+            f"• /set_folder - Set current folder\n"
+            f"• /help - Show all commands"
+        )
 
 
 @main_bot.on_message(
@@ -308,7 +510,12 @@ async def file_handler(client: Client, message: Message):
 
     if not BOT_MODE.current_folder:
         await message.reply_text(
-            "Error: No default folder set. Please use /set_folder to set one before uploading files."
+            "❌ **Error:** No default folder set.\n\n"
+            "Please use /set_folder to set one before uploading files.\n\n"
+            "💡 **Quick start:**\n"
+            "1. Use /set_folder to choose a folder\n"
+            "2. Send files to upload them\n"
+            "3. Use /create_folder to create new folders"
         )
         return
 
@@ -329,10 +536,16 @@ async def file_handler(client: Client, message: Message):
     )
 
     await message.reply_text(
-        f"""✅ File Uploaded Successfully To Your TG Drive Website
+        f"""✅ **File Uploaded Successfully!**
                              
 **File Name:** {file.file_name}
 **Folder:** {BOT_MODE.current_folder_name}
+**Size:** {file.file_size / (1024*1024):.2f} MB
+
+💡 **What's next?**
+• Send more files to upload them
+• Use /create_folder to create new folders
+• Use /set_folder to change location
 """
     )
 
@@ -426,4 +639,3 @@ async def start_bot_mode(d, b):
         message_to_send,
     )
     logger.info(message_to_send)
-                

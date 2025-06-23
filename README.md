@@ -124,7 +124,7 @@ Access the application at `http://127.0.0.1:8000` or `http://your_ip:8000`.
 
 ## TG Drive's Bot Mode
 
-TG Drive's Bot Mode is a new feature that allows you to upload files directly to your TG Drive website from a Telegram bot. Simply send or forward any file to the bot, and it will be uploaded to your TG Drive. You can also specify the folder where you want the files to be uploaded.
+TG Drive's Bot Mode is a new feature that allows you to upload files directly to your TG Drive website from a Telegram bot. Simply send or forward any file to the bot, and it will be uploaded to your TG Drive. You can also specify the folder where you want the files to be uploaded and create new folders directly from Telegram.
 
 To use this feature, you need to set the configuration variables `MAIN_BOT_TOKEN` and `TELEGRAM_ADMIN_IDS`. More information about these variables can be found in the [optional variables section](#optional-variables).
 
@@ -134,6 +134,7 @@ Once these variables are set, users whose IDs are listed in `TELEGRAM_ADMIN_IDS`
 
 - `/set_folder` - Set the folder for file uploads
 - `/current_folder` - Check the current folder
+- `/create_folder` - Create a new folder in the current directory
 
 ### Quick Demo
 
@@ -147,6 +148,19 @@ Bot Mode - Youtube Video Tutorial : https://youtu.be/XSeY2XcHdGI
 #### Changing Folder for Uploading
 
 1. Send the `/set_folder` command and follow the instructions provided by the bot.
+
+#### Creating New Folders
+
+1. Send the `/create_folder` command to create a new folder in your current directory.
+2. You can either provide the folder name directly: `/create_folder My New Folder`
+3. Or use the command without arguments for interactive mode: `/create_folder`
+
+**Features:**
+- **Direct Creation:** Use `/create_folder <folder_name>` to create folders instantly
+- **Interactive Mode:** Use `/create_folder` alone for step-by-step guidance
+- **Validation:** Automatic validation of folder names to ensure compatibility
+- **Duplicate Check:** Prevents creating folders with names that already exist
+- **Error Handling:** Clear error messages and guidance for any issues
 
 ## Important Posts Regarding TG Drive
 
