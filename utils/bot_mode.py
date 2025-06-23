@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 import config
@@ -16,10 +17,13 @@ You can use this bot to upload files to your TG Drive website directly instead o
 /set_folder - Set folder for file uploads
 /current_folder - Check current folder
 /create_folder - Create a new folder in current directory
+/bulk_import - Import files in bulk from Telegram channel/group
 
 📤 **How To Upload Files:** Send a file to this bot and it will be uploaded to your TG Drive website. You can also set a folder for file uploads using /set_folder command.
 
 📁 **How To Create Folders:** Use /create_folder command to create new folders in your current directory.
+
+📦 **How To Bulk Import:** Use /bulk_import command to import multiple files from a Telegram channel/group by providing a range of message links.
 
 Read more about [TG Drive's Bot Mode](https://github.com/TechShreyash/TGDrive#tg-drives-bot-mode)
 """
@@ -83,6 +87,363 @@ async def start_handler(client: Client, message: Message):
     Handles the /start and /help commands, sending the welcome message.
     """
     await message.reply_text(START_CMD)
+
+
+@main_bot.on_message(
+    filters.command("bulk_import")
+    & filters.private
+    & filters.user(config.TELEGRAM_ADMIN_IDS),
+)
+async def bulk_import_handler(client: Client, message: Message):
+    """
+    Handles the /bulk_import command to import files in bulk from Telegram channels/groups.
+    """
+    global BOT_MODE, DRIVE_DATA
+
+    # Check if there's already a pending ask for this chat to prevent re-triggering
+    if message.chat.id in _pending_requests:
+        await message.reply_text("I'm already waiting for your input. Please provide the required information or /cancel.")
+        return 
+
+    # Check if current folder is set
+    if not BOT_MODE.current_folder:
+        await message.reply_text(
+            "❌ **Error:** No current folder set. Please use /set_folder to set a folder first before bulk importing files."
+        )
+        return
+
+    await message.reply_text(
+        "📦 **Bulk Import Files**\n\n"
+        "This feature allows you to import multiple files from a Telegram channel or group.\n\n"
+        "**How to use:**\n"
+        "1. Get the link of the first file you want to import\n"
+        "2. Get the link of the last file you want to import\n"
+        "3. I'll import all files between these two messages\n\n"
+        "**Example:**\n"
+        "From: `https://t.me/ParmarEnglishPyqSeriesPart1/3`\n"
+        "To: `https://t.me/ParmarEnglishPyqSeriesPart1/79`\n\n"
+        "**Note:** Both links must be from the same channel/group.\n\n"
+        "Let's start! Send /cancel to cancel anytime."
+    )
+
+    # Get the starting link
+    try:
+        start_link_msg = await manual_ask(
+            client=client,
+            chat_id=message.chat.id,
+            text=(
+                "📎 **Step 1/2: Starting Link**\n\n"
+                "Please send the Telegram link of the **first file** you want to import.\n\n"
+                "**Format:** `https://t.me/channel_name/message_id`\n\n"
+                "Send /cancel to cancel"
+            ),
+            timeout=300,  # 5 minutes timeout
+            filters=filters.text,
+        )
+    except asyncio.TimeoutError:
+        await message.reply_text("⏰ **Timeout**\n\nBulk import cancelled. Use /bulk_import to try again.")
+        return
+
+    if start_link_msg.text.lower() == "/cancel":
+        await message.reply_text("❌ **Cancelled**\n\nBulk import cancelled.")
+        return
+
+    start_link = start_link_msg.text.strip()
+    
+    # Validate and parse the starting link
+    start_parsed = parse_telegram_link(start_link)
+    if not start_parsed:
+        await message.reply_text(
+            "❌ **Invalid Link Format**\n\n"
+            "Please provide a valid Telegram link in the format:\n"
+            "`https://t.me/channel_name/message_id`\n\n"
+            "Use /bulk_import to try again."
+        )
+        return
+
+    # Get the ending link
+    try:
+        end_link_msg = await manual_ask(
+            client=client,
+            chat_id=message.chat.id,
+            text=(
+                "📎 **Step 2/2: Ending Link**\n\n"
+                "Please send the Telegram link of the **last file** you want to import.\n\n"
+                "**Format:** `https://t.me/channel_name/message_id`\n\n"
+                f"**Starting from:** {start_parsed['channel']}/{start_parsed['message_id']}\n\n"
+                "Send /cancel to cancel"
+            ),
+            timeout=300,  # 5 minutes timeout
+            filters=filters.text,
+        )
+    except asyncio.TimeoutError:
+        await message.reply_text("⏰ **Timeout**\n\nBulk import cancelled. Use /bulk_import to try again.")
+        return
+
+    if end_link_msg.text.lower() == "/cancel":
+        await message.reply_text("❌ **Cancelled**\n\nBulk import cancelled.")
+        return
+
+    end_link = end_link_msg.text.strip()
+    
+    # Validate and parse the ending link
+    end_parsed = parse_telegram_link(end_link)
+    if not end_parsed:
+        await message.reply_text(
+            "❌ **Invalid Link Format**\n\n"
+            "Please provide a valid Telegram link in the format:\n"
+            "`https://t.me/channel_name/message_id`\n\n"
+            "Use /bulk_import to try again."
+        )
+        return
+
+    # Validate that both links are from the same channel
+    if start_parsed['channel'] != end_parsed['channel']:
+        await message.reply_text(
+            "❌ **Channel Mismatch**\n\n"
+            "Both links must be from the same channel or group.\n\n"
+            f"**Starting link:** {start_parsed['channel']}\n"
+            f"**Ending link:** {end_parsed['channel']}\n\n"
+            "Use /bulk_import to try again."
+        )
+        return
+
+    # Validate message ID range
+    start_id = start_parsed['message_id']
+    end_id = end_parsed['message_id']
+    
+    if start_id >= end_id:
+        await message.reply_text(
+            "❌ **Invalid Range**\n\n"
+            "The starting message ID must be less than the ending message ID.\n\n"
+            f"**Starting ID:** {start_id}\n"
+            f"**Ending ID:** {end_id}\n\n"
+            "Use /bulk_import to try again."
+        )
+        return
+
+    # Calculate the number of files to import
+    file_count = end_id - start_id + 1
+    
+    if file_count > 100:
+        await message.reply_text(
+            "❌ **Too Many Files**\n\n"
+            f"You're trying to import {file_count} files. The maximum allowed is 100 files per bulk import.\n\n"
+            "Please reduce the range and try again."
+        )
+        return
+
+    # Confirm the import
+    confirmation_msg = await message.reply_text(
+        f"📋 **Confirm Bulk Import**\n\n"
+        f"**Channel:** {start_parsed['channel']}\n"
+        f"**Range:** {start_id} to {end_id}\n"
+        f"**Total files:** {file_count}\n"
+        f"**Destination folder:** {BOT_MODE.current_folder_name}\n\n"
+        f"⚠️ **Warning:** This will import {file_count} files. Make sure you have enough storage space.\n\n"
+        f"Type **YES** to confirm or **NO** to cancel."
+    )
+
+    try:
+        confirm_msg = await manual_ask(
+            client=client,
+            chat_id=message.chat.id,
+            text="Please type **YES** to confirm or **NO** to cancel:",
+            timeout=60,
+            filters=filters.text,
+        )
+    except asyncio.TimeoutError:
+        await message.reply_text("⏰ **Timeout**\n\nBulk import cancelled due to timeout.")
+        return
+
+    if confirm_msg.text.upper() not in ["YES", "Y"]:
+        await message.reply_text("❌ **Cancelled**\n\nBulk import cancelled by user.")
+        return
+
+    # Start the bulk import process
+    await message.reply_text(
+        f"🚀 **Starting Bulk Import**\n\n"
+        f"Importing {file_count} files from {start_parsed['channel']}...\n"
+        f"This may take a while. I'll send you updates every 10 files.\n\n"
+        f"**Current folder:** {BOT_MODE.current_folder_name}"
+    )
+
+    # Start the bulk import task
+    asyncio.create_task(
+        bulk_import_files(
+            client, 
+            message.chat.id, 
+            start_parsed['channel'], 
+            start_id, 
+            end_id,
+            BOT_MODE.current_folder
+        )
+    )
+
+
+def parse_telegram_link(link):
+    """
+    Parse a Telegram link and extract channel name and message ID.
+    Returns a dict with 'channel' and 'message_id' or None if invalid.
+    """
+    # Pattern to match Telegram links
+    patterns = [
+        r'https://t\.me/([^/]+)/(\d+)',  # https://t.me/channel/123
+        r'https://telegram\.me/([^/]+)/(\d+)',  # https://telegram.me/channel/123
+        r't\.me/([^/]+)/(\d+)',  # t.me/channel/123
+    ]
+    
+    for pattern in patterns:
+        match = re.match(pattern, link.strip())
+        if match:
+            channel = match.group(1)
+            message_id = int(match.group(2))
+            return {
+                'channel': channel,
+                'message_id': message_id
+            }
+    
+    return None
+
+
+async def bulk_import_files(client, user_chat_id, channel_name, start_id, end_id, destination_folder):
+    """
+    Import files in bulk from a Telegram channel/group.
+    """
+    global DRIVE_DATA
+    
+    try:
+        # Try to resolve the channel
+        try:
+            channel = await client.get_chat(channel_name)
+            channel_id = channel.id
+        except Exception as e:
+            await client.send_message(
+                user_chat_id,
+                f"❌ **Error accessing channel**\n\n"
+                f"Could not access channel `{channel_name}`. Make sure:\n"
+                f"1. The channel/group exists\n"
+                f"2. The bot has access to the channel\n"
+                f"3. The channel username is correct\n\n"
+                f"**Error:** {str(e)}"
+            )
+            return
+
+        total_files = end_id - start_id + 1
+        imported_count = 0
+        skipped_count = 0
+        error_count = 0
+        
+        # Send initial status
+        status_msg = await client.send_message(
+            user_chat_id,
+            f"📊 **Import Progress**\n\n"
+            f"**Total:** {total_files}\n"
+            f"**Imported:** {imported_count}\n"
+            f"**Skipped:** {skipped_count}\n"
+            f"**Errors:** {error_count}\n\n"
+            f"**Status:** Starting import..."
+        )
+
+        # Import files in the range
+        for message_id in range(start_id, end_id + 1):
+            try:
+                # Get the message
+                try:
+                    source_message = await client.get_messages(channel_id, message_id)
+                except Exception as e:
+                    logger.warning(f"Could not get message {message_id} from {channel_name}: {e}")
+                    skipped_count += 1
+                    continue
+
+                # Check if message has media
+                if not source_message or source_message.empty:
+                    skipped_count += 1
+                    continue
+
+                # Check if message has a file
+                media = (
+                    source_message.document
+                    or source_message.video
+                    or source_message.audio
+                    or source_message.photo
+                    or source_message.sticker
+                )
+
+                if not media:
+                    skipped_count += 1
+                    continue
+
+                # Copy the message to storage channel
+                try:
+                    copied_message = await source_message.copy(config.STORAGE_CHANNEL)
+                    
+                    # Get file info from copied message
+                    copied_media = (
+                        copied_message.document
+                        or copied_message.video
+                        or copied_message.audio
+                        or copied_message.photo
+                        or copied_message.sticker
+                    )
+
+                    # Add file to drive data
+                    DRIVE_DATA.new_file(
+                        destination_folder,
+                        copied_media.file_name or f"file_{message_id}",
+                        copied_message.id,
+                        copied_media.file_size or 0,
+                    )
+
+                    imported_count += 1
+                    logger.info(f"Imported file from message {message_id}: {copied_media.file_name}")
+
+                except Exception as e:
+                    logger.error(f"Error copying message {message_id}: {e}")
+                    error_count += 1
+
+                # Update status every 10 files or at the end
+                if (imported_count + skipped_count + error_count) % 10 == 0 or message_id == end_id:
+                    try:
+                        await status_msg.edit_text(
+                            f"📊 **Import Progress**\n\n"
+                            f"**Total:** {total_files}\n"
+                            f"**Imported:** {imported_count}\n"
+                            f"**Skipped:** {skipped_count}\n"
+                            f"**Errors:** {error_count}\n\n"
+                            f"**Current:** Processing message {message_id}/{end_id}"
+                        )
+                    except:
+                        pass  # Ignore edit errors
+
+                # Small delay to avoid rate limiting
+                await asyncio.sleep(0.5)
+
+            except Exception as e:
+                logger.error(f"Unexpected error processing message {message_id}: {e}")
+                error_count += 1
+
+        # Send final status
+        await client.send_message(
+            user_chat_id,
+            f"✅ **Bulk Import Completed**\n\n"
+            f"**Total files processed:** {total_files}\n"
+            f"**Successfully imported:** {imported_count}\n"
+            f"**Skipped (no media):** {skipped_count}\n"
+            f"**Errors:** {error_count}\n\n"
+            f"**Destination folder:** {BOT_MODE.current_folder_name}\n\n"
+            f"All imported files are now available on your TG Drive website! 🎉"
+        )
+
+    except Exception as e:
+        logger.error(f"Bulk import failed: {e}")
+        await client.send_message(
+            user_chat_id,
+            f"❌ **Bulk Import Failed**\n\n"
+            f"An unexpected error occurred during the bulk import process.\n\n"
+            f"**Error:** {str(e)}\n\n"
+            f"Please try again or contact support if the issue persists."
+        )
 
 
 @main_bot.on_message(
@@ -472,7 +833,8 @@ async def current_folder_handler(client: Client, message: Message):
             f"💡 **Available commands:**\n"
             f"• Send files to upload them here\n"
             f"• /create_folder - Create new folders\n"
-            f"• /set_folder - Change current folder"
+            f"• /set_folder - Change current folder\n"
+            f"• /bulk_import - Import files in bulk"
         )
     else:
         await message.reply_text(
@@ -515,7 +877,8 @@ async def file_handler(client: Client, message: Message):
             "💡 **Quick start:**\n"
             "1. Use /set_folder to choose a folder\n"
             "2. Send files to upload them\n"
-            "3. Use /create_folder to create new folders"
+            "3. Use /create_folder to create new folders\n"
+            "4. Use /bulk_import to import files in bulk"
         )
         return
 
@@ -546,6 +909,7 @@ async def file_handler(client: Client, message: Message):
 • Send more files to upload them
 • Use /create_folder to create new folders
 • Use /set_folder to change location
+• Use /bulk_import to import files in bulk
 """
     )
 
