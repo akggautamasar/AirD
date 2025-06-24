@@ -12,6 +12,15 @@ function openFile() {
     const fileName = this.getAttribute('data-name').toLowerCase()
     let path = '/file?path=' + this.getAttribute('data-path') + '/' + this.getAttribute('data-id')
 
+    // Check if it's a PDF file
+    if (fileName.endsWith('.pdf')) {
+        // Open PDF in the built-in viewer
+        const viewerPath = '/pdf-viewer?path=' + this.getAttribute('data-path') + '/' + this.getAttribute('data-id')
+        window.open(viewerPath, '_blank')
+        return
+    }
+
+    // Check if it's a video file
     if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || fileName.endsWith('.ogv')) {
         path = '/stream?url=' + getRootUrl() + path
     }
@@ -212,11 +221,13 @@ async function shareFile() {
     const root_url = getRootUrl()
 
     let link
-    if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || fileName.endsWith('.ogv')) {
+    if (fileName.endsWith('.pdf')) {
+        // Share PDF viewer link instead of direct download
+        link = `${root_url}/pdf-viewer?path=${path}`
+    } else if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || fileName.endsWith('.ogv')) {
         link = `${root_url}/stream?url=${root_url}/file?path=${path}`
     } else {
         link = `${root_url}/file?path=${path}`
-
     }
 
     copyTextToClipboard(link)

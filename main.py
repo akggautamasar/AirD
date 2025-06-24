@@ -43,8 +43,13 @@ async def home_page():
 
 
 @app.get("/stream")
-async def home_page():
+async def stream_page():
     return FileResponse("website/VideoPlayer.html")
+
+
+@app.get("/pdf-viewer")
+async def pdf_viewer_page():
+    return FileResponse("website/PDFViewer.html")
 
 
 @app.get("/static/{file_path:path}")
