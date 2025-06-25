@@ -904,14 +904,18 @@
 }
 
 .directory table tr th:nth-child(1) {
-    width: 60%;
+    width: 45%;
 }
 
 .directory table tr th:nth-child(2) {
-    width: 25%;
+    width: 20%;
 }
 
 .directory table tr th:nth-child(3) {
+    width: 20%;
+}
+
+.directory table tr th:nth-child(4) {
     width: 15%;
 }
 
@@ -972,6 +976,17 @@
 .directory .more-btn:hover {
     background-color: #b9b9b9;
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Duration badge styling */
+.duration-badge {
+    background-color: #f0f0f0;
+    color: #666;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 /* Table responsive wrapper */
@@ -1044,15 +1059,19 @@
     }
 
     .directory table tr th:nth-child(1) {
-        width: 50%;
+        width: 40%;
     }
 
     .directory table tr th:nth-child(2) {
-        width: 30%;
+        width: 25%;
     }
 
     .directory table tr th:nth-child(3) {
         width: 20%;
+    }
+
+    .directory table tr th:nth-child(4) {
+        width: 15%;
     }
 
     .directory table tr td {
@@ -1206,6 +1225,12 @@
     .file-count-label {
         font-size: 0.75rem;
     }
+
+    /* Duration badge mobile */
+    .duration-badge {
+        font-size: 0.7rem;
+        padding: 1px 6px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1219,15 +1244,19 @@
     }
 
     .directory table tr th:nth-child(1) {
-        width: 45%;
+        width: 35%;
     }
 
     .directory table tr th:nth-child(2) {
-        width: 30%;
+        width: 25%;
     }
 
     .directory table tr th:nth-child(3) {
         width: 25%;
+    }
+
+    .directory table tr th:nth-child(4) {
+        width: 15%;
     }
 
     .directory table tr td {
@@ -1341,6 +1370,12 @@
     .folder-icon {
         width: 18px;
         height: 18px;
+    }
+
+    /* Duration badge very small mobile */
+    .duration-badge {
+        font-size: 0.65rem;
+        padding: 1px 4px;
     }
 }
 

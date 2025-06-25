@@ -5,6 +5,8 @@ from config import STORAGE_CHANNEL
 import os
 from utils.logger import Logger
 from urllib.parse import unquote_plus
+import subprocess
+import json
 
 logger = Logger(__name__)
 PROGRESS_CACHE = {}
@@ -24,6 +26,46 @@ async def progress_callback(current, total, id, client: Client, file_path):
             pass
 
 
+def get_video_duration(file_path):
+    """Extract video duration using ffprobe"""
+    try:
+        cmd = [
+            'ffprobe', 
+            '-v', 'quiet', 
+            '-print_format', 'json', 
+            '-show_format', 
+            str(file_path)
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            duration = float(data.get('format', {}).get('duration', 0))
+            return int(duration)
+        else:
+            logger.warning(f"ffprobe failed for {file_path}: {result.stderr}")
+            return 0
+            
+    except subprocess.TimeoutExpired:
+        logger.warning(f"ffprobe timeout for {file_path}")
+        return 0
+    except (subprocess.SubprocessError, json.JSONDecodeError, ValueError, KeyError) as e:
+        logger.warning(f"Error getting duration for {file_path}: {e}")
+        return 0
+    except Exception as e:
+        logger.error(f"Unexpected error getting duration for {file_path}: {e}")
+        return 0
+
+
+def is_video_file(filename):
+    """Check if file is a video based on extension"""
+    video_extensions = {'.mp4', '.mkv', '.webm', '.mov', '.avi', '.ts', '.ogv', 
+                       '.m4v', '.flv', '.wmv', '.3gp', '.mpg', '.mpeg'}
+    extension = os.path.splitext(filename.lower())[1]
+    return extension in video_extensions
+
+
 async def start_file_uploader(
     file_path, id, directory_path, filename, file_size, delete=True
 ):
@@ -39,6 +81,12 @@ async def start_file_uploader(
         client: Client = get_client()
 
     PROGRESS_CACHE[id] = ("running", 0, 0)
+
+    # Extract video duration if it's a video file
+    duration = 0
+    if is_video_file(filename):
+        duration = get_video_duration(file_path)
+        logger.info(f"Video duration for {filename}: {duration} seconds")
 
     message: Message = await client.send_document(
         STORAGE_CHANNEL,
@@ -57,7 +105,7 @@ async def start_file_uploader(
 
     filename = unquote_plus(filename)
 
-    DRIVE_DATA.new_file(directory_path, filename, message.id, size)
+    DRIVE_DATA.new_file(directory_path, filename, message.id, size, duration)
     PROGRESS_CACHE[id] = ("completed", size, size)
 
     logger.info(f"Uploaded file {file_path} {id}")

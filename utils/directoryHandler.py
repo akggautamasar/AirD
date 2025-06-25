@@ -53,6 +53,7 @@ class File:
         file_id: int,
         size: int,
         path: str,
+        duration: int = 0,
     ) -> None:
         self.name = name
         self.file_id = file_id
@@ -62,6 +63,7 @@ class File:
         self.trash = False
         self.path = path[:-1] if path[-1] == "/" else path
         self.upload_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.duration = duration  # Duration in seconds for video files
 
 
 class NewDriveData:
@@ -93,10 +95,10 @@ class NewDriveData:
         self.save()
         return folder.path + folder.id
 
-    def new_file(self, path: str, name: str, file_id: int, size: int) -> None:
+    def new_file(self, path: str, name: str, file_id: int, size: int, duration: int = 0) -> None:
         logger.info(f"Creating new file '{name}' in path '{path}'.")
 
-        file = File(name, file_id, size, path)
+        file = File(name, file_id, size, path, duration)
         if path == "/":
             directory_folder: Folder = self.contents[path]
             directory_folder.contents[file.id] = file
@@ -453,6 +455,10 @@ async def init_drive_data():
 
                 if not hasattr(item, "auth_hashes"):
                     item.auth_hashes = []
+            elif item.type == "file":
+                # Add duration attribute to existing files if not present
+                if not hasattr(item, "duration"):
+                    item.duration = 0
 
     traverse_directory(root_dir)
     DRIVE_DATA.save()

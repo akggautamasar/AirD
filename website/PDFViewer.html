@@ -34,7 +34,7 @@
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             z-index: 100;
         }
@@ -108,6 +108,18 @@
             text-align: center;
         }
 
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 8px;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .control-group:last-child {
+            border-right: none;
+        }
+
         .pdf-viewer {
             flex: 1;
             overflow: auto;
@@ -116,6 +128,7 @@
             justify-content: center;
             align-items: flex-start;
             padding: 20px;
+            position: relative;
         }
 
         .pdf-page-container {
@@ -125,6 +138,7 @@
             overflow: hidden;
             max-width: 100%;
             max-height: 100%;
+            position: relative;
         }
 
         #pdf-canvas {
@@ -140,6 +154,22 @@
             height: 200px;
             font-size: 16px;
             color: #666;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0b57d0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .error {
@@ -162,6 +192,17 @@
                 flex-direction: column;
                 align-items: stretch;
                 gap: 8px;
+            }
+
+            .control-group {
+                justify-content: center;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                padding: 8px 0;
+            }
+
+            .control-group:last-child {
+                border-bottom: none;
             }
 
             .pdf-controls {
@@ -254,18 +295,43 @@
                 display: none;
             }
         }
+
+        /* Scrolling enhancements */
+        .pdf-viewer::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .pdf-viewer::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .pdf-viewer::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 6px;
+        }
+
+        .pdf-viewer::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Smooth scrolling */
+        .pdf-viewer {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
 <body>
     <div class="pdf-container">
         <div class="pdf-toolbar">
-            <div class="pdf-controls">
-                <button id="prev-page" title="Previous Page (←)">
-                    <span>←</span> Previous
-                </button>
-                <button id="next-page" title="Next Page (→)">
-                    Next <span>→</span>
-                </button>
+            <div class="control-group">
+                <div class="pdf-controls">
+                    <button id="prev-page" title="Previous Page (←)">
+                        <span>←</span> Previous
+                    </button>
+                    <button id="next-page" title="Next Page (→)">
+                        Next <span>→</span>
+                    </button>
+                </div>
                 <div class="page-info">
                     <span>Page</span>
                     <input type="number" id="page-input" class="page-input" min="1" value="1">
@@ -274,22 +340,29 @@
                 </div>
             </div>
 
-            <div class="pdf-controls">
-                <button id="zoom-out" title="Zoom Out (-)">-</button>
-                <div class="zoom-info" id="zoom-level">100%</div>
-                <button id="zoom-in" title="Zoom In (+)">+</button>
-                <button id="fit-width" title="Fit Width (0)">Fit Width</button>
+            <div class="control-group">
+                <div class="pdf-controls">
+                    <button id="zoom-out" title="Zoom Out (-)">-</button>
+                    <div class="zoom-info" id="zoom-level">100%</div>
+                    <button id="zoom-in" title="Zoom In (+)">+</button>
+                    <button id="fit-width" title="Fit Width (0)">Fit Width</button>
+                </div>
             </div>
 
-            <div class="pdf-controls">
-                <button id="copy-link" title="Copy Viewer Link">📋 Copy Link</button>
-                <button id="copy-download" title="Copy Download Link">🔗 Copy Download</button>
-                <button id="download-pdf" class="primary" title="Download PDF">⬇️ Download</button>
+            <div class="control-group">
+                <div class="pdf-controls">
+                    <button id="copy-link" title="Copy Viewer Link">📋 Copy Link</button>
+                    <button id="copy-download" title="Copy Download Link">🔗 Copy Download</button>
+                    <button id="download-pdf" class="primary" title="Download PDF">⬇️ Download</button>
+                </div>
             </div>
         </div>
 
         <div class="pdf-viewer" id="pdf-viewer">
-            <div class="loading" id="loading">Loading PDF...</div>
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <div>Loading PDF...</div>
+            </div>
         </div>
     </div>
 
@@ -299,6 +372,7 @@
         <div>+ - : Zoom in/out</div>
         <div>0 : Fit width</div>
         <div>Home/End : First/Last page</div>
+        <div>Scroll : Navigate through pages</div>
     </div>
 
     <script>
@@ -319,6 +393,7 @@
         let currentScale = 1.0;
         let canvas = null;
         let ctx = null;
+        let isScrolling = false;
 
         // DOM elements
         const loading = document.getElementById('loading');
@@ -367,10 +442,94 @@
                 // Show keyboard shortcuts briefly
                 showKeyboardShortcuts();
 
+                // Add scroll listener for page navigation
+                addScrollNavigation();
+
             } catch (error) {
                 console.error('Error loading PDF:', error);
                 showError('Failed to load PDF: ' + error.message);
             }
+        }
+
+        // Add scroll navigation functionality
+        function addScrollNavigation() {
+            let scrollTimeout;
+            
+            pdfViewer.addEventListener('wheel', function(e) {
+                // Allow normal zoom with Ctrl+wheel
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    if (e.deltaY < 0) {
+                        zoomInBtn.click();
+                    } else {
+                        zoomOutBtn.click();
+                    }
+                    return;
+                }
+
+                // Clear existing timeout
+                clearTimeout(scrollTimeout);
+                
+                // Set flag to indicate scrolling
+                isScrolling = true;
+                
+                // Check if we're at the top or bottom of the container
+                const atTop = pdfViewer.scrollTop === 0;
+                const atBottom = pdfViewer.scrollTop >= (pdfViewer.scrollHeight - pdfViewer.clientHeight - 1);
+                
+                // Navigate pages when at boundaries
+                if (atTop && e.deltaY < 0 && currentPage > 1) {
+                    e.preventDefault();
+                    renderPage(currentPage - 1);
+                    // Scroll to bottom after page change
+                    setTimeout(() => {
+                        pdfViewer.scrollTop = pdfViewer.scrollHeight;
+                    }, 100);
+                } else if (atBottom && e.deltaY > 0 && currentPage < totalPages) {
+                    e.preventDefault();
+                    renderPage(currentPage + 1);
+                    // Scroll to top after page change
+                    setTimeout(() => {
+                        pdfViewer.scrollTop = 0;
+                    }, 100);
+                }
+                
+                // Reset scrolling flag after a delay
+                scrollTimeout = setTimeout(() => {
+                    isScrolling = false;
+                }, 150);
+            }, { passive: false });
+
+            // Handle touch scrolling for mobile
+            let touchStartY = 0;
+            let touchEndY = 0;
+            
+            pdfViewer.addEventListener('touchstart', function(e) {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+            
+            pdfViewer.addEventListener('touchend', function(e) {
+                touchEndY = e.changedTouches[0].clientY;
+                const deltaY = touchStartY - touchEndY;
+                const threshold = 50; // Minimum swipe distance
+                
+                if (Math.abs(deltaY) > threshold) {
+                    const atTop = pdfViewer.scrollTop === 0;
+                    const atBottom = pdfViewer.scrollTop >= (pdfViewer.scrollHeight - pdfViewer.clientHeight - 1);
+                    
+                    if (atTop && deltaY < 0 && currentPage > 1) {
+                        renderPage(currentPage - 1);
+                        setTimeout(() => {
+                            pdfViewer.scrollTop = pdfViewer.scrollHeight;
+                        }, 100);
+                    } else if (atBottom && deltaY > 0 && currentPage < totalPages) {
+                        renderPage(currentPage + 1);
+                        setTimeout(() => {
+                            pdfViewer.scrollTop = 0;
+                        }, 100);
+                    }
+                }
+            }, { passive: true });
         }
 
         // Render specific page
@@ -424,7 +583,7 @@
             shortcuts.classList.add('show');
             setTimeout(() => {
                 shortcuts.classList.remove('show');
-            }, 3000);
+            }, 4000);
         }
 
         // Copy to clipboard
@@ -573,6 +732,7 @@
                     break;
                 case 'ArrowRight':
                 case 'PageDown':
+                case ' ': // Spacebar
                     e.preventDefault();
                     if (currentPage < totalPages) renderPage(currentPage + 1);
                     break;
