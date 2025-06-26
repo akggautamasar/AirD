@@ -123,7 +123,7 @@ async def bulk_import_handler(client: Client, message: Message):
         "From: `https://t.me/ParmarEnglishPyqSeriesPart1/3`\n"
         "To: `https://t.me/ParmarEnglishPyqSeriesPart1/79`\n\n"
         "**Note:** Both links must be from the same channel/group.\n"
-        "**Maximum:** Up to 5,000 files per bulk import.\n\n"
+        "**Maximum:** Up to 10,000 files per bulk import.\n\n"
         "Let's start! Send /cancel to cancel anytime."
     )
 
@@ -226,14 +226,14 @@ async def bulk_import_handler(client: Client, message: Message):
     # Calculate the number of files to import
     file_count = end_id - start_id + 1
     
-    # Increased limit to 5000 files
-    if file_count > 5000:
+    # Increased limit to 10000 files
+    if file_count > 10000:
         await message.reply_text(
             "❌ **Too Many Files**\n\n"
-            f"You're trying to import {file_count:,} files. The maximum allowed is 5,000 files per bulk import.\n\n"
+            f"You're trying to import {file_count:,} files. The maximum allowed is 10,000 files per bulk import.\n\n"
             "**Suggestions:**\n"
             "• Split your import into smaller ranges\n"
-            "• Import in batches of 5,000 or fewer files\n\n"
+            "• Import in batches of 10,000 or fewer files\n\n"
             "Please reduce the range and try again."
         )
         return
@@ -241,9 +241,10 @@ async def bulk_import_handler(client: Client, message: Message):
     # Show warning for large imports
     warning_message = ""
     if file_count > 1000:
+        estimated_time = max(1, file_count // 100)  # Much faster estimate
         warning_message = (
             f"⚠️ **Large Import Warning:** You're importing {file_count:,} files. "
-            f"This may take a significant amount of time (estimated: {file_count // 60 + 1} minutes).\n\n"
+            f"This may take approximately {estimated_time} minutes.\n\n"
         )
 
     # Confirm the import
@@ -278,9 +279,9 @@ async def bulk_import_handler(client: Client, message: Message):
     await message.reply_text(
         f"🚀 **Starting Bulk Import**\n\n"
         f"Importing {file_count:,} files from {start_parsed['channel']}...\n"
-        f"This may take a while. I'll send you updates every 50 files.\n\n"
+        f"This process has been optimized for speed. I'll send you updates every 100 files.\n\n"
         f"**Current folder:** {BOT_MODE.current_folder_name}\n\n"
-        f"**Estimated time:** {file_count // 60 + 1} minutes"
+        f"**Estimated time:** {max(1, file_count // 100)} minutes"
     )
 
     # Start the bulk import task
@@ -324,7 +325,7 @@ def parse_telegram_link(link):
 async def bulk_import_files(client, user_chat_id, channel_name, start_id, end_id, destination_folder):
     """
     Import files in bulk from a Telegram channel/group.
-    Enhanced for handling large imports up to 5000 files.
+    Optimized for high-speed processing with concurrent operations.
     """
     global DRIVE_DATA
     
@@ -358,90 +359,87 @@ async def bulk_import_files(client, user_chat_id, channel_name, start_id, end_id
             f"**Imported:** {imported_count:,}\n"
             f"**Skipped:** {skipped_count:,}\n"
             f"**Errors:** {error_count:,}\n\n"
-            f"**Status:** Starting import..."
+            f"**Status:** Starting optimized import..."
         )
 
-        # Import files in the range
-        for message_id in range(start_id, end_id + 1):
-            try:
-                # Get the message
-                try:
-                    source_message = await client.get_messages(channel_id, message_id)
-                except Exception as e:
-                    logger.warning(f"Could not get message {message_id} from {channel_name}: {e}")
-                    skipped_count += 1
-                    continue
-
-                # Check if message has media
-                if not source_message or source_message.empty:
-                    skipped_count += 1
-                    continue
-
-                # Check if message has a file
-                media = (
-                    source_message.document
-                    or source_message.video
-                    or source_message.audio
-                    or source_message.photo
-                    or source_message.sticker
-                )
-
-                if not media:
-                    skipped_count += 1
-                    continue
-
-                # Copy the message to storage channel
-                try:
-                    copied_message = await source_message.copy(config.STORAGE_CHANNEL)
-                    
-                    # Get file info from copied message
-                    copied_media = (
-                        copied_message.document
-                        or copied_message.video
-                        or copied_message.audio
-                        or copied_message.photo
-                        or copied_message.sticker
-                    )
-
-                    # Add file to drive data
-                    DRIVE_DATA.new_file(
-                        destination_folder,
-                        copied_media.file_name or f"file_{message_id}",
-                        copied_message.id,
-                        copied_media.file_size or 0,
-                    )
-
-                    imported_count += 1
-                    logger.info(f"Imported file from message {message_id}: {copied_media.file_name}")
-
-                except Exception as e:
-                    logger.error(f"Error copying message {message_id}: {e}")
+        # Process files in batches for better performance
+        batch_size = 50  # Process 50 files concurrently
+        batch_updates = []  # Store database updates to batch them
+        
+        for batch_start in range(start_id, end_id + 1, batch_size):
+            batch_end = min(batch_start + batch_size - 1, end_id)
+            
+            # Process batch concurrently
+            batch_tasks = []
+            for message_id in range(batch_start, batch_end + 1):
+                task = process_single_message(client, channel_id, message_id, destination_folder)
+                batch_tasks.append(task)
+            
+            # Wait for all tasks in batch to complete
+            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+            
+            # Process results
+            for result in batch_results:
+                if isinstance(result, Exception):
                     error_count += 1
-
-                # Update status every 50 files or at the end
-                if (imported_count + skipped_count + error_count) % 50 == 0 or message_id == end_id:
-                    try:
-                        progress_percentage = ((message_id - start_id + 1) / total_files) * 100
-                        await status_msg.edit_text(
-                            f"📊 **Import Progress**\n\n"
-                            f"**Total:** {total_files:,}\n"
-                            f"**Imported:** {imported_count:,}\n"
-                            f"**Skipped:** {skipped_count:,}\n"
-                            f"**Errors:** {error_count:,}\n\n"
-                            f"**Progress:** {progress_percentage:.1f}%\n"
-                            f"**Current:** Processing message {message_id:,}/{end_id:,}"
+                    logger.error(f"Batch processing error: {result}")
+                elif result is None:
+                    skipped_count += 1
+                elif isinstance(result, dict):
+                    batch_updates.append(result)
+                    imported_count += 1
+            
+            # Batch update database every 50 files for better performance
+            if batch_updates:
+                try:
+                    for update in batch_updates:
+                        DRIVE_DATA.new_file(
+                            update['folder'],
+                            update['filename'],
+                            update['message_id'],
+                            update['file_size'],
+                            update.get('duration', 0)
                         )
-                    except:
-                        pass  # Ignore edit errors
+                    batch_updates.clear()
+                    logger.info(f"Batch updated {len(batch_updates)} files to database")
+                except Exception as e:
+                    logger.error(f"Database batch update error: {e}")
+                    error_count += len(batch_updates)
+                    batch_updates.clear()
 
-                # Reduced delay for better performance with large imports
-                await asyncio.sleep(0.2)
+            # Update status every 100 files or at the end
+            processed = imported_count + skipped_count + error_count
+            if processed % 100 == 0 or batch_end >= end_id:
+                try:
+                    progress_percentage = (processed / total_files) * 100
+                    speed = processed / max(1, (asyncio.get_event_loop().time() - status_msg.date.timestamp()) / 60)
+                    
+                    await status_msg.edit_text(
+                        f"📊 **Import Progress**\n\n"
+                        f"**Total:** {total_files:,}\n"
+                        f"**Imported:** {imported_count:,}\n"
+                        f"**Skipped:** {skipped_count:,}\n"
+                        f"**Errors:** {error_count:,}\n\n"
+                        f"**Progress:** {progress_percentage:.1f}%\n"
+                        f"**Speed:** {speed:.0f} files/min\n"
+                        f"**Current:** Processing batch {batch_start:,}-{batch_end:,}"
+                    )
+                except:
+                    pass  # Ignore edit errors
 
-            except Exception as e:
-                logger.error(f"Unexpected error processing message {message_id}: {e}")
-                error_count += 1
+            # Small delay to prevent overwhelming the API
+            await asyncio.sleep(0.1)
+
+        # Final database save
+        try:
+            DRIVE_DATA.save()
+        except Exception as e:
+            logger.error(f"Final database save error: {e}")
 
         # Send final status
+        total_time = (asyncio.get_event_loop().time() - status_msg.date.timestamp()) / 60
+        avg_speed = total_files / max(1, total_time)
+        
         await client.send_message(
             user_chat_id,
             f"✅ **Bulk Import Completed**\n\n"
@@ -450,6 +448,8 @@ async def bulk_import_files(client, user_chat_id, channel_name, start_id, end_id
             f"**Skipped (no media):** {skipped_count:,}\n"
             f"**Errors:** {error_count:,}\n\n"
             f"**Success rate:** {(imported_count / total_files * 100):.1f}%\n"
+            f"**Total time:** {total_time:.1f} minutes\n"
+            f"**Average speed:** {avg_speed:.0f} files/min\n"
             f"**Destination folder:** {BOT_MODE.current_folder_name}\n\n"
             f"All imported files are now available on your TG Drive website! 🎉"
         )
@@ -463,6 +463,60 @@ async def bulk_import_files(client, user_chat_id, channel_name, start_id, end_id
             f"**Error:** {str(e)}\n\n"
             f"Please try again or contact support if the issue persists."
         )
+
+
+async def process_single_message(client, channel_id, message_id, destination_folder):
+    """
+    Process a single message for bulk import.
+    Returns file info dict if successful, None if skipped, raises exception if error.
+    """
+    try:
+        # Get the message
+        source_message = await client.get_messages(channel_id, message_id)
+        
+        if not source_message or source_message.empty:
+            return None
+
+        # Check if message has media
+        media = (
+            source_message.document
+            or source_message.video
+            or source_message.audio
+            or source_message.photo
+            or source_message.sticker
+        )
+
+        if not media:
+            return None
+
+        # Copy the message to storage channel
+        copied_message = await source_message.copy(config.STORAGE_CHANNEL)
+        
+        # Get file info from copied message
+        copied_media = (
+            copied_message.document
+            or copied_message.video
+            or copied_message.audio
+            or copied_message.photo
+            or copied_message.sticker
+        )
+
+        # Extract duration for video files
+        duration = 0
+        if copied_message.video and hasattr(copied_message.video, 'duration'):
+            duration = copied_message.video.duration or 0
+
+        return {
+            'folder': destination_folder,
+            'filename': copied_media.file_name or f"file_{message_id}",
+            'message_id': copied_message.id,
+            'file_size': copied_media.file_size or 0,
+            'duration': duration
+        }
+
+    except Exception as e:
+        logger.error(f"Error processing message {message_id}: {e}")
+        raise e
 
 
 @main_bot.on_message(
@@ -910,11 +964,17 @@ async def file_handler(client: Client, message: Message):
         or copied_message.sticker
     )
 
+    # Extract duration for video files
+    duration = 0
+    if copied_message.video and hasattr(copied_message.video, 'duration'):
+        duration = copied_message.video.duration or 0
+
     DRIVE_DATA.new_file(
         BOT_MODE.current_folder,
         file.file_name,
         copied_message.id,
         file.file_size,
+        duration
     )
 
     await message.reply_text(
