@@ -100,3 +100,37 @@ document.getElementById('remote-cancel').addEventListener('click', () => {
 document.getElementById('remote-start').addEventListener('click', Start_URL_Upload);
 
 // New Url Upload End
+
+// Fast Import Start
+
+document.getElementById('fast-import-btn').addEventListener('click', () => {
+    document.getElementById('fast-import-channel').value = '';
+    document.getElementById('fast-import-start-msg').value = '';
+    document.getElementById('fast-import-end-msg').value = '';
+    document.getElementById('bg-blur').style.zIndex = '2';
+    document.getElementById('bg-blur').style.opacity = '0.1';
+
+    document.getElementById('fast-import-modal').style.zIndex = '3';
+    document.getElementById('fast-import-modal').style.opacity = '1';
+    setTimeout(() => {
+        document.getElementById('fast-import-channel').focus();
+    }, 300)
+})
+
+document.getElementById('fast-import-cancel').addEventListener('click', () => {
+    document.getElementById('fast-import-channel').value = '';
+    document.getElementById('fast-import-start-msg').value = '';
+    document.getElementById('fast-import-end-msg').value = '';
+    document.getElementById('bg-blur').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('bg-blur').style.zIndex = '-1';
+    }, 300)
+    document.getElementById('fast-import-modal').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('fast-import-modal').style.zIndex = '-1';
+    }, 300)
+});
+
+document.getElementById('fast-import-start').addEventListener('click', Start_Fast_Import);
+
+// Fast Import End

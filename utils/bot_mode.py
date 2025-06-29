@@ -18,12 +18,15 @@ You can use this bot to upload files to your TG Drive website directly instead o
 /current_folder - Check current folder
 /create_folder - Create a new folder in current directory
 /bulk_import - Import files in bulk from Telegram channel/group
+/fast_import - Import files directly without copying (requires admin access)
 
 📤 **How To Upload Files:** Send a file to this bot and it will be uploaded to your TG Drive website. You can also set a folder for file uploads using /set_folder command.
 
 📁 **How To Create Folders:** Use /create_folder command to create new folders in your current directory.
 
 📦 **How To Bulk Import:** Use /bulk_import command to import multiple files from a Telegram channel/group by providing a range of message links.
+
+⚡ **How To Fast Import:** Use /fast_import command to import files directly from channels without copying them. The bot must be admin in the source channel.
 
 Read more about [TG Drive's Bot Mode](https://github.com/TechShreyash/TGDrive#tg-drives-bot-mode)
 """
@@ -87,6 +90,253 @@ async def start_handler(client: Client, message: Message):
     Handles the /start and /help commands, sending the welcome message.
     """
     await message.reply_text(START_CMD)
+
+
+@main_bot.on_message(
+    filters.command("fast_import")
+    & filters.private
+    & filters.user(config.TELEGRAM_ADMIN_IDS),
+)
+async def fast_import_handler(client: Client, message: Message):
+    """
+    Handles the /fast_import command for importing files directly without copying.
+    """
+    global BOT_MODE, DRIVE_DATA
+
+    # Check if there's already a pending ask for this chat to prevent re-triggering
+    if message.chat.id in _pending_requests:
+        await message.reply_text("I'm already waiting for your input. Please provide the required information or /cancel.")
+        return 
+
+    # Check if current folder is set
+    if not BOT_MODE.current_folder:
+        await message.reply_text(
+            "❌ **Error:** No current folder set. Please use /set_folder to set a folder first before fast importing files."
+        )
+        return
+
+    await message.reply_text(
+        "⚡ **Fast Import Files**\n\n"
+        "This feature allows you to import files directly from a Telegram channel without copying them to your storage channel. "
+        "The files will be streamed directly from the source channel.\n\n"
+        "**Requirements:**\n"
+        "• The bot must be admin in the source channel\n"
+        "• You need to provide the channel username or ID\n"
+        "• Optionally, you can specify a message range\n\n"
+        "**How to use:**\n"
+        "1. Provide the channel username (e.g., @mychannel) or ID\n"
+        "2. Optionally provide start and end message IDs for a specific range\n"
+        "3. Files will be imported instantly without copying\n\n"
+        "**Note:** Fast imported files are streamed directly from the source channel.\n\n"
+        "Let's start! Send /cancel to cancel anytime."
+    )
+
+    # Get the channel identifier
+    try:
+        channel_msg = await manual_ask(
+            client=client,
+            chat_id=message.chat.id,
+            text=(
+                "📺 **Step 1: Channel Information**\n\n"
+                "Please send the channel username or ID:\n\n"
+                "**Examples:**\n"
+                "• @mychannel\n"
+                "• mychannel\n"
+                "• -1001234567890\n\n"
+                "Send /cancel to cancel"
+            ),
+            timeout=300,  # 5 minutes timeout
+            filters=filters.text,
+        )
+    except asyncio.TimeoutError:
+        await message.reply_text("⏰ **Timeout**\n\nFast import cancelled. Use /fast_import to try again.")
+        return
+
+    if channel_msg.text.lower() == "/cancel":
+        await message.reply_text("❌ **Cancelled**\n\nFast import cancelled.")
+        return
+
+    channel_identifier = channel_msg.text.strip()
+    
+    # Ask for message range (optional)
+    try:
+        range_msg = await manual_ask(
+            client=client,
+            chat_id=message.chat.id,
+            text=(
+                "📋 **Step 2: Message Range (Optional)**\n\n"
+                "Do you want to import all files or specify a range?\n\n"
+                "**Options:**\n"
+                "• Send 'all' to import all files from the channel\n"
+                "• Send 'range' to specify start and end message IDs\n"
+                "• Send /cancel to cancel\n\n"
+                f"**Channel:** {channel_identifier}"
+            ),
+            timeout=300,
+            filters=filters.text,
+        )
+    except asyncio.TimeoutError:
+        await message.reply_text("⏰ **Timeout**\n\nFast import cancelled. Use /fast_import to try again.")
+        return
+
+    if range_msg.text.lower() == "/cancel":
+        await message.reply_text("❌ **Cancelled**\n\nFast import cancelled.")
+        return
+
+    start_msg_id = None
+    end_msg_id = None
+
+    if range_msg.text.lower() == "range":
+        # Get start message ID
+        try:
+            start_msg = await manual_ask(
+                client=client,
+                chat_id=message.chat.id,
+                text=(
+                    "🔢 **Start Message ID**\n\n"
+                    "Please send the starting message ID:\n\n"
+                    "Send /cancel to cancel"
+                ),
+                timeout=300,
+                filters=filters.text,
+            )
+        except asyncio.TimeoutError:
+            await message.reply_text("⏰ **Timeout**\n\nFast import cancelled.")
+            return
+
+        if start_msg.text.lower() == "/cancel":
+            await message.reply_text("❌ **Cancelled**\n\nFast import cancelled.")
+            return
+
+        try:
+            start_msg_id = int(start_msg.text.strip())
+        except ValueError:
+            await message.reply_text("❌ **Invalid Message ID**\n\nPlease provide a valid number.")
+            return
+
+        # Get end message ID
+        try:
+            end_msg = await manual_ask(
+                client=client,
+                chat_id=message.chat.id,
+                text=(
+                    "🔢 **End Message ID**\n\n"
+                    "Please send the ending message ID:\n\n"
+                    f"**Starting from:** {start_msg_id}\n\n"
+                    "Send /cancel to cancel"
+                ),
+                timeout=300,
+                filters=filters.text,
+            )
+        except asyncio.TimeoutError:
+            await message.reply_text("⏰ **Timeout**\n\nFast import cancelled.")
+            return
+
+        if end_msg.text.lower() == "/cancel":
+            await message.reply_text("❌ **Cancelled**\n\nFast import cancelled.")
+            return
+
+        try:
+            end_msg_id = int(end_msg.text.strip())
+        except ValueError:
+            await message.reply_text("❌ **Invalid Message ID**\n\nPlease provide a valid number.")
+            return
+
+        if start_msg_id >= end_msg_id:
+            await message.reply_text("❌ **Invalid Range**\n\nStart message ID must be less than end message ID.")
+            return
+
+    # Confirm the import
+    range_text = "All files" if not start_msg_id else f"Messages {start_msg_id} to {end_msg_id}"
+    confirmation_msg = await message.reply_text(
+        f"⚡ **Confirm Fast Import**\n\n"
+        f"**Channel:** {channel_identifier}\n"
+        f"**Range:** {range_text}\n"
+        f"**Destination folder:** {BOT_MODE.current_folder_name}\n\n"
+        f"**Important:** This will import files directly without copying them. "
+        f"The bot must be admin in the source channel.\n\n"
+        f"Type **YES** to confirm or **NO** to cancel."
+    )
+
+    try:
+        confirm_msg = await manual_ask(
+            client=client,
+            chat_id=message.chat.id,
+            text="Please type **YES** to confirm or **NO** to cancel:",
+            timeout=60,
+            filters=filters.text,
+        )
+    except asyncio.TimeoutError:
+        await message.reply_text("⏰ **Timeout**\n\nFast import cancelled due to timeout.")
+        return
+
+    if confirm_msg.text.upper() not in ["YES", "Y"]:
+        await message.reply_text("❌ **Cancelled**\n\nFast import cancelled by user.")
+        return
+
+    # Start the fast import process
+    await message.reply_text(
+        f"⚡ **Starting Fast Import**\n\n"
+        f"Importing files from {channel_identifier}...\n"
+        f"This should be much faster than regular import!\n\n"
+        f"**Current folder:** {BOT_MODE.current_folder_name}"
+    )
+
+    # Start the fast import task
+    asyncio.create_task(
+        fast_import_files(
+            client, 
+            message.chat.id, 
+            channel_identifier, 
+            BOT_MODE.current_folder,
+            start_msg_id,
+            end_msg_id
+        )
+    )
+
+
+async def fast_import_files(client, user_chat_id, channel_identifier, destination_folder, start_msg_id=None, end_msg_id=None):
+    """
+    Fast import files from a channel without copying them.
+    """
+    global DRIVE_DATA
+    
+    try:
+        from utils.fast_import import FAST_IMPORT_MANAGER
+        
+        imported_count, total_files = await FAST_IMPORT_MANAGER.fast_import_files(
+            client, 
+            channel_identifier, 
+            destination_folder, 
+            start_msg_id, 
+            end_msg_id
+        )
+
+        # Send completion message
+        await client.send_message(
+            user_chat_id,
+            f"✅ **Fast Import Completed**\n\n"
+            f"**Successfully imported:** {imported_count:,} files\n"
+            f"**Total files processed:** {total_files:,}\n"
+            f"**Success rate:** {(imported_count / total_files * 100):.1f}%\n"
+            f"**Destination folder:** {BOT_MODE.current_folder_name}\n\n"
+            f"⚡ **Fast imported files are now available on your TG Drive website!**\n"
+            f"Files are streamed directly from the source channel for maximum efficiency! 🎉"
+        )
+
+    except Exception as e:
+        logger.error(f"Fast import failed: {e}")
+        await client.send_message(
+            user_chat_id,
+            f"❌ **Fast Import Failed**\n\n"
+            f"An error occurred during the fast import process.\n\n"
+            f"**Error:** {str(e)}\n\n"
+            f"**Possible solutions:**\n"
+            f"• Make sure the bot is admin in the source channel\n"
+            f"• Check that the channel identifier is correct\n"
+            f"• Verify the message range is valid\n\n"
+            f"Please try again or contact support if the issue persists."
+        )
 
 
 @main_bot.on_message(
@@ -853,7 +1103,8 @@ async def current_folder_handler(client: Client, message: Message):
             f"• Send files to upload them here\n"
             f"• /create_folder - Create new folders\n"
             f"• /set_folder - Change current folder\n"
-            f"• /bulk_import - Import files in bulk"
+            f"• /bulk_import - Import files in bulk\n"
+            f"• /fast_import - Import files directly (fast)"
         )
     else:
         await message.reply_text(
@@ -897,7 +1148,8 @@ async def file_handler(client: Client, message: Message):
             "1. Use /set_folder to choose a folder\n"
             "2. Send files to upload them\n"
             "3. Use /create_folder to create new folders\n"
-            "4. Use /bulk_import to import files in bulk"
+            "4. Use /bulk_import to import files in bulk\n"
+            "5. Use /fast_import to import files directly (fast)"
         )
         return
 
@@ -929,6 +1181,7 @@ async def file_handler(client: Client, message: Message):
 • Use /create_folder to create new folders
 • Use /set_folder to change location
 • Use /bulk_import to import files in bulk
+• Use /fast_import to import files directly (fast)
 """
     )
 

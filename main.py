@@ -68,7 +68,16 @@ async def dl_file(request: Request):
 
     path = request.query_params["path"]
     file = DRIVE_DATA.get_file(path)
-    return await media_streamer(STORAGE_CHANNEL, file.file_id, file.name, request)
+    
+    # Determine which channel to use for streaming
+    if hasattr(file, 'is_fast_import') and file.is_fast_import and file.source_channel:
+        # Use source channel for fast import files
+        channel = file.source_channel
+    else:
+        # Use storage channel for regular files
+        channel = STORAGE_CHANNEL
+    
+    return await media_streamer(channel, file.file_id, file.name, request)
 
 
 # Api Routes
@@ -412,3 +421,41 @@ async def getFolderShareAuth(request: Request):
         return JSONResponse({"status": "ok", "auth": auth})
     except:
         return JSONResponse({"status": "not found"})
+
+
+@app.post("/api/fastImport")
+async def fast_import(request: Request):
+    """API endpoint for fast import functionality"""
+    from utils.fast_import import FAST_IMPORT_MANAGER
+    from utils.clients import get_client
+
+    data = await request.json()
+
+    if data["password"] != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"fastImport {data}")
+
+    try:
+        client = get_client()
+        channel_identifier = data["channel"]
+        destination_folder = data["path"]
+        start_msg_id = data.get("start_msg_id")
+        end_msg_id = data.get("end_msg_id")
+
+        imported_count, total_files = await FAST_IMPORT_MANAGER.fast_import_files(
+            client, 
+            channel_identifier, 
+            destination_folder, 
+            start_msg_id, 
+            end_msg_id
+        )
+
+        return JSONResponse({
+            "status": "ok", 
+            "imported": imported_count, 
+            "total": total_files
+        })
+    except Exception as e:
+        logger.error(f"Fast import error: {e}")
+        return JSONResponse({"status": str(e)})

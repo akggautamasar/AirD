@@ -54,6 +54,11 @@
                     <img src="static/assets/link-icon.svg" />
                     URL Upload
                 </div>
+                <hr />
+                <div id="fast-import-btn">
+                    <img src="static/assets/upload-icon.svg" />
+                    Fast Import
+                </div>
             </div>
 
             <div class="sidebar-menu">
@@ -116,6 +121,24 @@
             </div>
         </div>
         <!-- Remote Upload End -->
+
+        <!-- Fast Import Modal Start -->
+        <div id="fast-import-modal" class="create-new-folder">
+            <span>Fast Import</span>
+            <input type="text" id="fast-import-channel" placeholder="Channel username or ID (e.g., @mychannel)" autocomplete="off" />
+            <input type="number" id="fast-import-start-msg" placeholder="Start Message ID (optional)" autocomplete="off" />
+            <input type="number" id="fast-import-end-msg" placeholder="End Message ID (optional)" autocomplete="off" />
+            <div class="fast-import-info">
+                <p><strong>Fast Import:</strong> Import files directly without copying them to storage channel.</p>
+                <p><strong>Requirements:</strong> Bot must be admin in the source channel.</p>
+                <p><strong>Message Range:</strong> Leave empty to import all files, or specify range for selective import.</p>
+            </div>
+            <div>
+                <button id="fast-import-cancel">Cancel</button>
+                <button id="fast-import-start">Import</button>
+            </div>
+        </div>
+        <!-- Fast Import Modal End -->
 
         <!-- Get Password Start -->
         <div id="get-password" class="create-new-folder">

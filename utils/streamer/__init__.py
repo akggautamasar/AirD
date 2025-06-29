@@ -7,6 +7,7 @@ from utils.clients import (
     get_client,
 )
 from urllib.parse import quote
+from utils.directoryHandler import DRIVE_DATA
 
 logger = Logger(__name__)
 
@@ -17,6 +18,21 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
     global class_cache
 
     range_header = request.headers.get("Range", 0)
+
+    # Get the file to check if it's a fast import file
+    try:
+        # Get file path from request or construct it
+        file_path = request.query_params.get("path", "")
+        if file_path:
+            file_obj = DRIVE_DATA.get_file(file_path)
+            
+            # If it's a fast import file, use the source channel
+            if hasattr(file_obj, 'is_fast_import') and file_obj.is_fast_import and file_obj.source_channel:
+                channel = file_obj.source_channel
+                logger.info(f"Using fast import source channel {channel} for file {file_name}")
+    except Exception as e:
+        logger.warning(f"Could not determine if file is fast import: {e}")
+        # Continue with original channel (storage channel)
 
     faster_client = get_client()
 

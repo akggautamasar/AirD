@@ -268,6 +268,32 @@
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Fast Import Modal Styles */
+.fast-import-info {
+    width: 100%;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    color: #495057;
+    line-height: 1.4;
+}
+
+.fast-import-info p {
+    margin-bottom: 8px;
+}
+
+.fast-import-info p:last-child {
+    margin-bottom: 0;
+}
+
+.fast-import-info strong {
+    color: #212529;
+    font-weight: 600;
+}
+
 /* Move/Copy Modal Styles */
 .folder-tree {
     width: 100%;
@@ -1231,6 +1257,12 @@
         font-size: 0.7rem;
         padding: 1px 6px;
     }
+
+    /* Fast Import modal mobile */
+    .fast-import-info {
+        padding: 12px;
+        font-size: 0.8rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1376,6 +1408,12 @@
     .duration-badge {
         font-size: 0.65rem;
         padding: 1px 4px;
+    }
+
+    /* Fast Import modal very small mobile */
+    .fast-import-info {
+        padding: 10px;
+        font-size: 0.75rem;
     }
 }
 

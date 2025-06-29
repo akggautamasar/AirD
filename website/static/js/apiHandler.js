@@ -345,3 +345,77 @@ async function Start_URL_Upload() {
 }
 
 // URL Uploader End
+
+// Fast Import Start
+
+async function Start_Fast_Import() {
+    try {
+        document.getElementById('fast-import-modal').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('fast-import-modal').style.zIndex = '-1';
+        }, 300)
+
+        const channel = document.getElementById('fast-import-channel').value.trim()
+        const startMsg = document.getElementById('fast-import-start-msg').value.trim()
+        const endMsg = document.getElementById('fast-import-end-msg').value.trim()
+
+        if (!channel) {
+            throw new Error('Channel identifier is required')
+        }
+
+        const data = {
+            'channel': channel,
+            'path': getCurrentPath()
+        }
+
+        // Add message range if provided
+        if (startMsg && endMsg) {
+            const startMsgId = parseInt(startMsg)
+            const endMsgId = parseInt(endMsg)
+            
+            if (isNaN(startMsgId) || isNaN(endMsgId)) {
+                throw new Error('Message IDs must be valid numbers')
+            }
+            
+            if (startMsgId >= endMsgId) {
+                throw new Error('Start message ID must be less than end message ID')
+            }
+            
+            data.start_msg_id = startMsgId
+            data.end_msg_id = endMsgId
+        }
+
+        // Show progress
+        document.getElementById('bg-blur').style.zIndex = '2';
+        document.getElementById('bg-blur').style.opacity = '0.1';
+        document.getElementById('file-uploader').style.zIndex = '3';
+        document.getElementById('file-uploader').style.opacity = '1';
+
+        document.getElementById('upload-filename').innerText = 'Channel: ' + channel;
+        document.getElementById('upload-filesize').innerText = 'Fast Import in progress...';
+        document.getElementById('upload-status').innerText = 'Status: Importing files directly from channel';
+        document.getElementById('upload-percent').innerText = 'Progress: Starting...';
+        progressBar.style.width = '50%';
+
+        const json = await postJson('/api/fastImport', data)
+
+        if (json.status === 'ok') {
+            progressBar.style.width = '100%';
+            document.getElementById('upload-percent').innerText = 'Progress: 100%';
+            document.getElementById('upload-status').innerText = `Status: Completed! Imported ${json.imported}/${json.total} files`;
+            
+            setTimeout(() => {
+                alert(`Fast Import Completed!\n\nImported: ${json.imported} files\nTotal: ${json.total} files\n\nFiles are now available on your drive!`)
+                window.location.reload();
+            }, 1000)
+        } else {
+            throw new Error(json.status)
+        }
+
+    } catch (err) {
+        alert(`Fast Import Error: ${err.message || err}`)
+        window.location.reload()
+    }
+}
+
+// Fast Import End

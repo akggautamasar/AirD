@@ -54,6 +54,7 @@ class File:
         size: int,
         path: str,
         duration: int = 0,
+        source_channel: int = None,
     ) -> None:
         self.name = name
         self.file_id = file_id
@@ -64,6 +65,8 @@ class File:
         self.path = path[:-1] if path[-1] == "/" else path
         self.upload_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.duration = duration  # Duration in seconds for video files
+        self.source_channel = source_channel  # For fast import files
+        self.is_fast_import = source_channel is not None
 
 
 class NewDriveData:
@@ -99,6 +102,23 @@ class NewDriveData:
         logger.info(f"Creating new file '{name}' in path '{path}'.")
 
         file = File(name, file_id, size, path, duration)
+        if path == "/":
+            directory_folder: Folder = self.contents[path]
+            directory_folder.contents[file.id] = file
+        else:
+            paths = path.strip("/").split("/")
+            directory_folder: Folder = self.contents["/"]
+            for path in paths:
+                directory_folder = directory_folder.contents[path]
+            directory_folder.contents[file.id] = file
+
+        self.save()
+
+    def new_fast_import_file(self, path: str, name: str, file_id: int, size: int, duration: int = 0, source_channel: int = None) -> None:
+        """Create a new fast import file that references source channel"""
+        logger.info(f"Creating new fast import file '{name}' in path '{path}' from channel {source_channel}.")
+
+        file = File(name, file_id, size, path, duration, source_channel)
         if path == "/":
             directory_folder: Folder = self.contents[path]
             directory_folder.contents[file.id] = file
@@ -459,6 +479,11 @@ async def init_drive_data():
                 # Add duration attribute to existing files if not present
                 if not hasattr(item, "duration"):
                     item.duration = 0
+                # Add fast import attributes to existing files if not present
+                if not hasattr(item, "source_channel"):
+                    item.source_channel = None
+                if not hasattr(item, "is_fast_import"):
+                    item.is_fast_import = False
 
     traverse_directory(root_dir)
     DRIVE_DATA.save()
