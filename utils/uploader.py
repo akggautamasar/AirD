@@ -26,6 +26,30 @@ async def progress_callback(current, total, id, client: Client, file_path):
             pass
 
 
+async def copy_file_to_storage(client: Client, source_channel_id: int, message_id: int):
+    """Copy a file from source channel to storage channel"""
+    try:
+        # Get the message from source channel
+        source_message = await client.get_messages(source_channel_id, message_id)
+        
+        if not source_message or source_message.empty:
+            raise Exception("Source message not found")
+        
+        # Forward/copy the message to storage channel
+        copied_message = await client.copy_message(
+            chat_id=STORAGE_CHANNEL,
+            from_chat_id=source_channel_id,
+            message_id=message_id,
+            disable_notification=True
+        )
+        
+        return copied_message.id
+        
+    except Exception as e:
+        logger.error(f"Error copying file to storage: {e}")
+        raise
+
+
 def get_video_duration(file_path):
     """Extract video duration using ffprobe"""
     try:

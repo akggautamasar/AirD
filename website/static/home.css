@@ -268,8 +268,88 @@
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Fast Import Modal Styles */
-.fast-import-info {
+/* Smart Bulk Import Modal Styles */
+.message-range-container {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.message-range-container input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.import-mode-container {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.import-mode-container label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #444746;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.import-mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.radio-option:hover {
+    background-color: #f8f9fa;
+    border-color: #0b57d0;
+}
+
+.radio-option input[type="radio"] {
+    margin: 0;
+    width: auto;
+    padding: 0;
+}
+
+.radio-option input[type="radio"]:checked + span {
+    color: #0b57d0;
+    font-weight: 500;
+}
+
+.channel-status {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.channel-status-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.channel-status-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.smart-import-info {
     width: 100%;
     background-color: #f8f9fa;
     border: 1px solid #e9ecef;
@@ -281,15 +361,15 @@
     line-height: 1.4;
 }
 
-.fast-import-info p {
+.smart-import-info p {
     margin-bottom: 8px;
 }
 
-.fast-import-info p:last-child {
+.smart-import-info p:last-child {
     margin-bottom: 0;
 }
 
-.fast-import-info strong {
+.smart-import-info strong {
     color: #212529;
     font-weight: 600;
 }
@@ -1258,9 +1338,28 @@
         padding: 1px 6px;
     }
 
-    /* Fast Import modal mobile */
-    .fast-import-info {
+    /* Smart Bulk Import modal mobile */
+    .smart-import-info {
         padding: 12px;
+        font-size: 0.8rem;
+    }
+
+    .import-mode-options {
+        gap: 6px;
+    }
+
+    .radio-option {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .message-range-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .channel-status {
+        padding: 10px;
         font-size: 0.8rem;
     }
 }
@@ -1410,9 +1509,19 @@
         padding: 1px 4px;
     }
 
-    /* Fast Import modal very small mobile */
-    .fast-import-info {
+    /* Smart Bulk Import modal very small mobile */
+    .smart-import-info {
         padding: 10px;
+        font-size: 0.75rem;
+    }
+
+    .radio-option {
+        padding: 5px 8px;
+        font-size: 0.75rem;
+    }
+
+    .channel-status {
+        padding: 8px;
         font-size: 0.75rem;
     }
 }
@@ -1468,6 +1577,11 @@
     }
 
     .tree-action-btn {
+        min-height: 44px;
+        padding: 8px 12px;
+    }
+
+    .radio-option {
         min-height: 44px;
         padding: 8px 12px;
     }

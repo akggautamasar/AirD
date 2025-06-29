@@ -423,10 +423,10 @@ async def getFolderShareAuth(request: Request):
         return JSONResponse({"status": "not found"})
 
 
-@app.post("/api/fastImport")
-async def fast_import(request: Request):
-    """API endpoint for fast import functionality"""
-    from utils.fast_import import FAST_IMPORT_MANAGER
+@app.post("/api/smartBulkImport")
+async def smart_bulk_import(request: Request):
+    """API endpoint for smart bulk import functionality"""
+    from utils.fast_import import SMART_IMPORT_MANAGER
     from utils.clients import get_client
 
     data = await request.json()
@@ -434,7 +434,7 @@ async def fast_import(request: Request):
     if data["password"] != ADMIN_PASSWORD:
         return JSONResponse({"status": "Invalid password"})
 
-    logger.info(f"fastImport {data}")
+    logger.info(f"smartBulkImport {data}")
 
     try:
         client = get_client()
@@ -442,20 +442,53 @@ async def fast_import(request: Request):
         destination_folder = data["path"]
         start_msg_id = data.get("start_msg_id")
         end_msg_id = data.get("end_msg_id")
+        import_mode = data.get("import_mode", "auto")  # auto, fast, regular
 
-        imported_count, total_files = await FAST_IMPORT_MANAGER.fast_import_files(
+        imported_count, total_files, used_fast_import = await SMART_IMPORT_MANAGER.smart_bulk_import(
             client, 
             channel_identifier, 
             destination_folder, 
             start_msg_id, 
-            end_msg_id
+            end_msg_id,
+            import_mode
         )
 
         return JSONResponse({
             "status": "ok", 
             "imported": imported_count, 
-            "total": total_files
+            "total": total_files,
+            "method": "fast_import" if used_fast_import else "regular_import"
         })
     except Exception as e:
-        logger.error(f"Fast import error: {e}")
+        logger.error(f"Smart bulk import error: {e}")
         return JSONResponse({"status": str(e)})
+
+
+@app.post("/api/checkChannelAdmin")
+async def check_channel_admin(request: Request):
+    """Check if bot is admin in a channel"""
+    from utils.fast_import import SMART_IMPORT_MANAGER
+    from utils.clients import get_client
+
+    data = await request.json()
+
+    if data["password"] != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    try:
+        client = get_client()
+        channel_identifier = data["channel"]
+        
+        is_valid, result, is_admin = await SMART_IMPORT_MANAGER.validate_channel_access(client, channel_identifier)
+        
+        if not is_valid:
+            return JSONResponse({"status": "error", "message": result})
+        
+        return JSONResponse({
+            "status": "ok",
+            "is_admin": is_admin,
+            "channel_name": result.title or result.username or str(result.id)
+        })
+    except Exception as e:
+        logger.error(f"Check channel admin error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})

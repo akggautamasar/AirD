@@ -346,26 +346,43 @@ async function Start_URL_Upload() {
 
 // URL Uploader End
 
-// Fast Import Start
+// Smart Bulk Import Start
 
-async function Start_Fast_Import() {
+async function checkChannelAdmin(channel) {
+    const data = { 'channel': channel }
+    const json = await postJson('/api/checkChannelAdmin', data)
+    return json
+}
+
+async function Start_Smart_Bulk_Import() {
     try {
-        document.getElementById('fast-import-modal').style.opacity = '0';
+        document.getElementById('smart-bulk-import-modal').style.opacity = '0';
         setTimeout(() => {
-            document.getElementById('fast-import-modal').style.zIndex = '-1';
+            document.getElementById('smart-bulk-import-modal').style.zIndex = '-1';
         }, 300)
 
-        const channel = document.getElementById('fast-import-channel').value.trim()
-        const startMsg = document.getElementById('fast-import-start-msg').value.trim()
-        const endMsg = document.getElementById('fast-import-end-msg').value.trim()
+        const channel = document.getElementById('smart-bulk-channel').value.trim()
+        const startMsg = document.getElementById('smart-bulk-start-msg').value.trim()
+        const endMsg = document.getElementById('smart-bulk-end-msg').value.trim()
+        const importMode = document.querySelector('input[name="import-mode"]:checked').value
 
         if (!channel) {
             throw new Error('Channel identifier is required')
         }
 
+        // Parse message link if provided
+        let channelIdentifier = channel
+        if (channel.includes('t.me/')) {
+            const match = channel.match(/t\.me\/([^\/]+)/)
+            if (match) {
+                channelIdentifier = match[1]
+            }
+        }
+
         const data = {
-            'channel': channel,
-            'path': getCurrentPath()
+            'channel': channelIdentifier,
+            'path': getCurrentPath(),
+            'import_mode': importMode
         }
 
         // Add message range if provided
@@ -391,21 +408,23 @@ async function Start_Fast_Import() {
         document.getElementById('file-uploader').style.zIndex = '3';
         document.getElementById('file-uploader').style.opacity = '1';
 
-        document.getElementById('upload-filename').innerText = 'Channel: ' + channel;
-        document.getElementById('upload-filesize').innerText = 'Fast Import in progress...';
-        document.getElementById('upload-status').innerText = 'Status: Importing files directly from channel';
+        document.getElementById('upload-filename').innerText = 'Channel: ' + channelIdentifier;
+        document.getElementById('upload-filesize').innerText = 'Smart Bulk Import in progress...';
+        document.getElementById('upload-status').innerText = `Status: ${importMode === 'auto' ? 'Auto-detecting best method' : importMode === 'fast' ? 'Fast importing (direct reference)' : 'Regular importing (copying to storage)'}`;
         document.getElementById('upload-percent').innerText = 'Progress: Starting...';
         progressBar.style.width = '50%';
 
-        const json = await postJson('/api/fastImport', data)
+        const json = await postJson('/api/smartBulkImport', data)
 
         if (json.status === 'ok') {
             progressBar.style.width = '100%';
             document.getElementById('upload-percent').innerText = 'Progress: 100%';
-            document.getElementById('upload-status').innerText = `Status: Completed! Imported ${json.imported}/${json.total} files`;
+            
+            const methodText = json.method === 'fast_import' ? 'Fast Import (Direct Reference)' : 'Regular Import (Copied to Storage)'
+            document.getElementById('upload-status').innerText = `Status: Completed using ${methodText}!`;
             
             setTimeout(() => {
-                alert(`Fast Import Completed!\n\nImported: ${json.imported} files\nTotal: ${json.total} files\n\nFiles are now available on your drive!`)
+                alert(`🧠 Smart Bulk Import Completed!\n\nMethod: ${methodText}\nImported: ${json.imported} files\nTotal: ${json.total} files\n\nFiles are now available on your drive!`)
                 window.location.reload();
             }, 1000)
         } else {
@@ -413,9 +432,61 @@ async function Start_Fast_Import() {
         }
 
     } catch (err) {
-        alert(`Fast Import Error: ${err.message || err}`)
+        alert(`Smart Bulk Import Error: ${err.message || err}`)
         window.location.reload()
     }
 }
 
-// Fast Import End
+async function checkChannel() {
+    const channel = document.getElementById('smart-bulk-channel').value.trim()
+    
+    if (!channel) {
+        alert('Please enter a channel identifier')
+        return
+    }
+
+    // Parse message link if provided
+    let channelIdentifier = channel
+    if (channel.includes('t.me/')) {
+        const match = channel.match(/t\.me\/([^\/]+)/)
+        if (match) {
+            channelIdentifier = match[1]
+        }
+    }
+
+    try {
+        const result = await checkChannelAdmin(channelIdentifier)
+        const statusDiv = document.getElementById('channel-status')
+        
+        if (result.status === 'ok') {
+            statusDiv.innerHTML = `
+                <div class="channel-status-success">
+                    <strong>✅ Channel Found: ${result.channel_name}</strong><br>
+                    <span>Bot Admin Status: ${result.is_admin ? '✅ Admin (Fast Import Available)' : '❌ Not Admin (Regular Import Only)'}</span><br>
+                    <span>Recommended: ${result.is_admin ? '⚡ Fast Import or 🧠 Auto-Detect' : '📦 Regular Import or 🧠 Auto-Detect'}</span>
+                </div>
+            `
+        } else {
+            statusDiv.innerHTML = `
+                <div class="channel-status-error">
+                    <strong>❌ Error: ${result.message}</strong><br>
+                    <span>Please check the channel identifier and try again.</span>
+                </div>
+            `
+        }
+        
+        statusDiv.style.display = 'block'
+        
+    } catch (err) {
+        const statusDiv = document.getElementById('channel-status')
+        statusDiv.innerHTML = `
+            <div class="channel-status-error">
+                <strong>❌ Error checking channel</strong><br>
+                <span>${err.message || err}</span>
+            </div>
+        `
+        statusDiv.style.display = 'block'
+    }
+}
+
+// Smart Bulk Import End

@@ -55,9 +55,9 @@
                     URL Upload
                 </div>
                 <hr />
-                <div id="fast-import-btn">
+                <div id="smart-bulk-import-btn">
                     <img src="static/assets/upload-icon.svg" />
-                    Fast Import
+                    🧠 Smart Bulk Import
                 </div>
             </div>
 
@@ -122,23 +122,58 @@
         </div>
         <!-- Remote Upload End -->
 
-        <!-- Fast Import Modal Start -->
-        <div id="fast-import-modal" class="create-new-folder">
-            <span>Fast Import</span>
-            <input type="text" id="fast-import-channel" placeholder="Channel username or ID (e.g., @mychannel)" autocomplete="off" />
-            <input type="number" id="fast-import-start-msg" placeholder="Start Message ID (optional)" autocomplete="off" />
-            <input type="number" id="fast-import-end-msg" placeholder="End Message ID (optional)" autocomplete="off" />
-            <div class="fast-import-info">
-                <p><strong>Fast Import:</strong> Import files directly without copying them to storage channel.</p>
-                <p><strong>Requirements:</strong> Bot must be admin in the source channel.</p>
-                <p><strong>Message Range:</strong> Leave empty to import all files, or specify range for selective import.</p>
+        <!-- Smart Bulk Import Modal Start -->
+        <div id="smart-bulk-import-modal" class="create-new-folder">
+            <span>🧠 Smart Bulk Import</span>
+            
+            <!-- Channel Input -->
+            <input type="text" id="smart-bulk-channel" placeholder="Channel username, ID, or message link" autocomplete="off" />
+            
+            <!-- Message Range -->
+            <div class="message-range-container">
+                <input type="number" id="smart-bulk-start-msg" placeholder="Start Message ID (optional)" autocomplete="off" />
+                <input type="number" id="smart-bulk-end-msg" placeholder="End Message ID (optional)" autocomplete="off" />
             </div>
+            
+            <!-- Import Mode Selection -->
+            <div class="import-mode-container">
+                <label>Import Mode:</label>
+                <div class="import-mode-options">
+                    <label class="radio-option">
+                        <input type="radio" name="import-mode" value="auto" checked>
+                        <span>🧠 Auto-Detect (Recommended)</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="import-mode" value="fast">
+                        <span>⚡ Fast Import (Direct Reference)</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="import-mode" value="regular">
+                        <span>📦 Regular Import (Copy to Storage)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Channel Status Display -->
+            <div id="channel-status" class="channel-status" style="display: none;">
+                <!-- Status will be populated here -->
+            </div>
+            
+            <!-- Info Section -->
+            <div class="smart-import-info">
+                <p><strong>🧠 Auto-Detect:</strong> Bot automatically chooses the best method based on admin status.</p>
+                <p><strong>⚡ Fast Import:</strong> Direct reference without copying (requires bot admin in source channel).</p>
+                <p><strong>📦 Regular Import:</strong> Copy files to storage channel (works always).</p>
+                <p><strong>Message Links:</strong> Supports t.me/channel/123 format for easy import.</p>
+            </div>
+            
             <div>
-                <button id="fast-import-cancel">Cancel</button>
-                <button id="fast-import-start">Import</button>
+                <button id="smart-bulk-check">Check Channel</button>
+                <button id="smart-bulk-cancel">Cancel</button>
+                <button id="smart-bulk-start">Import</button>
             </div>
         </div>
-        <!-- Fast Import Modal End -->
+        <!-- Smart Bulk Import Modal End -->
 
         <!-- Get Password Start -->
         <div id="get-password" class="create-new-folder">

@@ -8,9 +8,9 @@ from config import STORAGE_CHANNEL
 
 logger = Logger(__name__)
 
-class FastImportManager:
+class SmartImportManager:
     def __init__(self):
-        self.import_channels = {}  # Store channel info for fast import
+        self.import_channels = {}  # Store channel info for smart import
         
     async def validate_channel_access(self, client: Client, channel_identifier: str):
         """Validate that the bot has admin access to the channel"""
@@ -20,12 +20,11 @@ class FastImportManager:
             
             # Check if bot is admin
             bot_member = await client.get_chat_member(channel.id, "me")
-            if not bot_member.privileges or not (bot_member.privileges.can_delete_messages or bot_member.privileges.can_edit_messages):
-                return False, "Bot needs admin privileges in the channel"
-                
-            return True, channel
+            is_admin = bot_member.privileges and (bot_member.privileges.can_delete_messages or bot_member.privileges.can_edit_messages)
+            
+            return True, channel, is_admin
         except Exception as e:
-            return False, f"Cannot access channel: {str(e)}"
+            return False, f"Cannot access channel: {str(e)}", False
     
     async def get_channel_files(self, client: Client, channel_id: int, start_msg_id: int = None, end_msg_id: int = None):
         """Get all files from a channel within the specified range"""
@@ -78,12 +77,12 @@ class FastImportManager:
             'file_unique_id': media.file_unique_id
         }
     
-    async def fast_import_files(self, client: Client, channel_identifier: str, destination_folder: str, 
-                               start_msg_id: int = None, end_msg_id: int = None):
-        """Import files directly without copying to storage channel"""
+    async def smart_bulk_import(self, client: Client, channel_identifier: str, destination_folder: str, 
+                               start_msg_id: int = None, end_msg_id: int = None, import_mode: str = "auto"):
+        """Smart bulk import with user choice"""
         
         # Validate channel access
-        is_valid, result = await self.validate_channel_access(client, channel_identifier)
+        is_valid, result, is_admin = await self.validate_channel_access(client, channel_identifier)
         if not is_valid:
             raise Exception(result)
             
@@ -96,27 +95,61 @@ class FastImportManager:
         if not files:
             raise Exception("No files found in the specified range")
         
-        # Add files to drive data with source channel info
-        imported_count = 0
-        for file_info in files:
-            try:
-                # Create a special file entry that references the source channel
-                DRIVE_DATA.new_fast_import_file(
-                    destination_folder,
-                    file_info['file_name'],
-                    file_info['message_id'],
-                    file_info['file_size'],
-                    file_info['duration'],
-                    file_info['source_channel']
-                )
-                imported_count += 1
-                logger.info(f"Fast imported: {file_info['file_name']} from channel {channel_id}")
-                
-            except Exception as e:
-                logger.error(f"Error importing file {file_info['file_name']}: {e}")
-                continue
+        # Determine import method based on mode and admin status
+        if import_mode == "auto":
+            use_fast_import = is_admin
+        elif import_mode == "fast":
+            if not is_admin:
+                raise Exception("Fast import requires bot to be admin in source channel")
+            use_fast_import = True
+        else:  # regular
+            use_fast_import = False
         
-        return imported_count, len(files)
+        imported_count = 0
+        
+        if use_fast_import:
+            # Fast import - direct reference without copying
+            for file_info in files:
+                try:
+                    DRIVE_DATA.new_fast_import_file(
+                        destination_folder,
+                        file_info['file_name'],
+                        file_info['message_id'],
+                        file_info['file_size'],
+                        file_info['duration'],
+                        file_info['source_channel']
+                    )
+                    imported_count += 1
+                    logger.info(f"Fast imported: {file_info['file_name']} from channel {channel_id}")
+                    
+                except Exception as e:
+                    logger.error(f"Error fast importing file {file_info['file_name']}: {e}")
+                    continue
+        else:
+            # Regular import - copy to storage channel
+            from utils.uploader import copy_file_to_storage
+            
+            for file_info in files:
+                try:
+                    # Copy file from source to storage channel
+                    new_message_id = await copy_file_to_storage(client, channel_id, file_info['message_id'])
+                    
+                    # Add to drive data with storage channel reference
+                    DRIVE_DATA.new_file(
+                        destination_folder,
+                        file_info['file_name'],
+                        new_message_id,
+                        file_info['file_size'],
+                        file_info['duration']
+                    )
+                    imported_count += 1
+                    logger.info(f"Regular imported: {file_info['file_name']} to storage channel")
+                    
+                except Exception as e:
+                    logger.error(f"Error regular importing file {file_info['file_name']}: {e}")
+                    continue
+        
+        return imported_count, len(files), use_fast_import
 
 # Global instance
-FAST_IMPORT_MANAGER = FastImportManager()
+SMART_IMPORT_MANAGER = SmartImportManager()

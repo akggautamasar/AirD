@@ -101,36 +101,42 @@ document.getElementById('remote-start').addEventListener('click', Start_URL_Uplo
 
 // New Url Upload End
 
-// Fast Import Start
+// Smart Bulk Import Start
 
-document.getElementById('fast-import-btn').addEventListener('click', () => {
-    document.getElementById('fast-import-channel').value = '';
-    document.getElementById('fast-import-start-msg').value = '';
-    document.getElementById('fast-import-end-msg').value = '';
+document.getElementById('smart-bulk-import-btn').addEventListener('click', () => {
+    document.getElementById('smart-bulk-channel').value = '';
+    document.getElementById('smart-bulk-start-msg').value = '';
+    document.getElementById('smart-bulk-end-msg').value = '';
+    document.querySelector('input[name="import-mode"][value="auto"]').checked = true;
+    document.getElementById('channel-status').style.display = 'none';
+    
     document.getElementById('bg-blur').style.zIndex = '2';
     document.getElementById('bg-blur').style.opacity = '0.1';
 
-    document.getElementById('fast-import-modal').style.zIndex = '3';
-    document.getElementById('fast-import-modal').style.opacity = '1';
+    document.getElementById('smart-bulk-import-modal').style.zIndex = '3';
+    document.getElementById('smart-bulk-import-modal').style.opacity = '1';
     setTimeout(() => {
-        document.getElementById('fast-import-channel').focus();
+        document.getElementById('smart-bulk-channel').focus();
     }, 300)
 })
 
-document.getElementById('fast-import-cancel').addEventListener('click', () => {
-    document.getElementById('fast-import-channel').value = '';
-    document.getElementById('fast-import-start-msg').value = '';
-    document.getElementById('fast-import-end-msg').value = '';
+document.getElementById('smart-bulk-cancel').addEventListener('click', () => {
+    document.getElementById('smart-bulk-channel').value = '';
+    document.getElementById('smart-bulk-start-msg').value = '';
+    document.getElementById('smart-bulk-end-msg').value = '';
+    document.getElementById('channel-status').style.display = 'none';
+    
     document.getElementById('bg-blur').style.opacity = '0';
     setTimeout(() => {
         document.getElementById('bg-blur').style.zIndex = '-1';
     }, 300)
-    document.getElementById('fast-import-modal').style.opacity = '0';
+    document.getElementById('smart-bulk-import-modal').style.opacity = '0';
     setTimeout(() => {
-        document.getElementById('fast-import-modal').style.zIndex = '-1';
+        document.getElementById('smart-bulk-import-modal').style.zIndex = '-1';
     }, 300)
 });
 
-document.getElementById('fast-import-start').addEventListener('click', Start_Fast_Import);
+document.getElementById('smart-bulk-check').addEventListener('click', checkChannel);
+document.getElementById('smart-bulk-start').addEventListener('click', Start_Smart_Bulk_Import);
 
-// Fast Import End
+// Smart Bulk Import End
