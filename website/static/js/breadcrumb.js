@@ -13,10 +13,11 @@ async function buildBreadcrumb(currentPath) {
     if (currentPath === '/trash') {
         breadcrumbContainer.innerHTML = `
             <div class="breadcrumb-item current">
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                 </svg>
-                Trash
+                <span>Archive</span>
             </div>
         `;
         return;
@@ -26,10 +27,11 @@ async function buildBreadcrumb(currentPath) {
         const query = decodeURIComponent(currentPath.split('_')[1]);
         breadcrumbContainer.innerHTML = `
             <div class="breadcrumb-item current">
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
                 </svg>
-                Search: ${query}
+                <span>Search: ${query}</span>
             </div>
         `;
         return;
@@ -53,10 +55,12 @@ async function buildShareBreadcrumb(sharePath) {
     const sharedItem = document.createElement('div');
     sharedItem.className = 'breadcrumb-item';
     sharedItem.innerHTML = `
-        <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16,6 12,2 8,6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
         </svg>
-        Shared
+        <span>Shared Content</span>
     `;
     breadcrumbContainer.appendChild(sharedItem);
 
@@ -77,12 +81,13 @@ async function buildNormalBreadcrumb(currentPath, isShared = false) {
     // Add home/root item if not shared
     if (!isShared) {
         const homeItem = document.createElement('div');
-        homeItem.className = 'breadcrumb-item breadcrumb-home';
+        homeItem.className = 'breadcrumb-item';
         homeItem.innerHTML = `
-            <svg viewBox="0 0 24 24" width="16" height="16">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
             </svg>
-            Root
+            <span>Learning Hub</span>
         `;
         
         if (currentPath === '/') {
@@ -119,7 +124,7 @@ async function buildNormalBreadcrumb(currentPath, isShared = false) {
         // Create breadcrumb item
         const item = document.createElement('div');
         item.className = 'breadcrumb-item';
-        item.textContent = folderName;
+        item.innerHTML = `<span>${folderName}</span>`;
         item.title = folderName; // Full name on hover
         
         // If this is the current folder, mark it as current
