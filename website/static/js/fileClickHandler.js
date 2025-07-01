@@ -22,12 +22,198 @@ function openFile() {
 
     // Check if it's a video file
     if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || fileName.endsWith('.ogv')) {
-        path = '/stream?url=' + getRootUrl() + path
+        // Show player selection modal
+        showPlayerSelectionModal(path)
+        return
     }
 
     window.open(path, '_blank')
 }
 
+// Player Selection Modal
+function showPlayerSelectionModal(filePath) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.zIndex = '1000';
+    modal.style.opacity = '1';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎬 Choose Video Player</h3>
+                <p>Select your preferred video player for the best experience</p>
+            </div>
+            <div class="modal-body">
+                <div class="player-options">
+                    <div class="player-option" onclick="openStandardPlayer('${filePath}')">
+                        <div class="player-icon standard">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                        </div>
+                        <div class="player-info">
+                            <h4>🎥 Standard Player</h4>
+                            <p>Full-featured player with all controls and high quality</p>
+                            <span class="player-badge">Best for: High-speed internet</span>
+                        </div>
+                    </div>
+                    
+                    <div class="player-option" onclick="openFastPlayer('${filePath}')">
+                        <div class="player-icon fast">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 19 22 12 13 5 13 19"/>
+                                <polygon points="2 19 11 12 2 5 2 19"/>
+                            </svg>
+                        </div>
+                        <div class="player-info">
+                            <h4>⚡ Fast Player</h4>
+                            <p>Optimized for slow connections with adaptive streaming</p>
+                            <span class="player-badge fast">Best for: Slow internet, mobile data</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePlayerModal()">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    // Add styles for player selection
+    const style = document.createElement('style');
+    style.textContent = `
+        .player-options {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+        
+        .player-option {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-5);
+            border: 2px solid var(--secondary-200);
+            border-radius: var(--radius-xl);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            background: var(--secondary-50);
+        }
+        
+        .player-option:hover {
+            border-color: var(--primary-500);
+            background: var(--primary-50);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .player-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .player-icon.standard {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+        }
+        
+        .player-icon.fast {
+            background: linear-gradient(135deg, var(--success-500), var(--success-600));
+        }
+        
+        .player-icon svg {
+            width: 28px;
+            height: 28px;
+            stroke: white;
+        }
+        
+        .player-info {
+            flex: 1;
+        }
+        
+        .player-info h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--secondary-900);
+            margin-bottom: var(--space-2);
+        }
+        
+        .player-info p {
+            color: var(--secondary-600);
+            margin-bottom: var(--space-3);
+            line-height: 1.5;
+        }
+        
+        .player-badge {
+            display: inline-block;
+            padding: var(--space-1) var(--space-3);
+            background: var(--primary-100);
+            color: var(--primary-700);
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .player-badge.fast {
+            background: var(--success-100);
+            color: var(--success-700);
+        }
+        
+        @media (max-width: 768px) {
+            .player-option {
+                flex-direction: column;
+                text-align: center;
+                gap: var(--space-3);
+            }
+            
+            .player-icon {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .player-icon svg {
+                width: 24px;
+                height: 24px;
+            }
+        }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+    
+    // Show background blur
+    document.getElementById('bg-blur').style.zIndex = '999';
+    document.getElementById('bg-blur').style.opacity = '0.5';
+}
+
+function openStandardPlayer(filePath) {
+    const streamPath = '/stream?url=' + getRootUrl() + filePath;
+    window.open(streamPath, '_blank');
+    closePlayerModal();
+}
+
+function openFastPlayer(filePath) {
+    const fastPlayerPath = '/fast-player?url=' + getRootUrl() + filePath;
+    window.open(fastPlayerPath, '_blank');
+    closePlayerModal();
+}
+
+function closePlayerModal() {
+    const modal = document.querySelector('.modal[style*="z-index: 1000"]');
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Hide background blur
+    document.getElementById('bg-blur').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('bg-blur').style.zIndex = '-1';
+    }, 300);
+}
 
 // File More Button Handler Start
 
@@ -171,10 +357,10 @@ async function trashFileFolder() {
     const response = await postJson('/api/trashFileFolder', data)
 
     if (response.status === 'ok') {
-        alert('File/Folder Sent to Trash Successfully')
+        alert('File/Folder Sent to Archive Successfully')
         window.location.reload();
     } else {
-        alert('Failed to Send File/Folder to Trash')
+        alert('Failed to Send File/Folder to Archive')
         window.location.reload();
     }
 }
@@ -232,7 +418,6 @@ async function shareFile() {
 
     copyTextToClipboard(link)
 }
-
 
 async function shareFolder() {
     const id = this.getAttribute('id').split('-')[2]

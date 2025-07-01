@@ -1026,7 +1026,7 @@ body {
     font-size: 1.1rem;
 }
 
-/* Directory Container */
+/* Directory Container - OPTIMIZED FOR MORE FILES */
 .directory-container {
     flex: 1;
     background: white;
@@ -1046,16 +1046,17 @@ body {
 
 .table-header {
     display: grid;
-    grid-template-columns: 1fr 150px 120px 80px;
-    gap: var(--space-4);
-    padding: var(--space-5) var(--space-6);
+    grid-template-columns: 1fr 120px 100px 60px;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     background: var(--secondary-50);
     border-bottom: 1px solid var(--secondary-200);
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--secondary-700);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    flex-shrink: 0;
 }
 
 .header-cell {
@@ -1065,8 +1066,8 @@ body {
 }
 
 .header-cell svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     stroke: currentColor;
     opacity: 0.7;
 }
@@ -1074,18 +1075,20 @@ body {
 .table-body {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
-/* Directory Items */
+/* Directory Items - COMPACT DESIGN FOR MORE FILES */
 .directory-item {
     display: grid;
-    grid-template-columns: 1fr 150px 120px 80px;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--space-6);
+    grid-template-columns: 1fr 120px 100px 60px;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--secondary-100);
     transition: all var(--transition-fast);
     cursor: pointer;
     align-items: center;
+    min-height: 48px;
 }
 
 .directory-item:hover {
@@ -1099,13 +1102,13 @@ body {
 .item-name {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
     min-width: 0;
 }
 
 .item-icon {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
@@ -1122,8 +1125,8 @@ body {
 }
 
 .item-icon svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     stroke: white;
 }
 
@@ -1135,15 +1138,17 @@ body {
 .item-title {
     font-weight: 600;
     color: var(--secondary-800);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.3;
 }
 
 .item-size {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--secondary-600);
+    text-align: right;
 }
 
 .item-duration {
@@ -1155,10 +1160,11 @@ body {
 .duration-badge {
     background: var(--primary-100);
     color: var(--primary-700);
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-full);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .item-actions {
@@ -1168,8 +1174,8 @@ body {
 }
 
 .more-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: none;
     background: transparent;
     border-radius: var(--radius-lg);
@@ -1185,8 +1191,8 @@ body {
 }
 
 .more-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     stroke: var(--secondary-600);
 }
 
@@ -1391,47 +1397,51 @@ body {
     }
 
     .table-header {
-        grid-template-columns: 1fr 80px 60px 50px;
-        padding: var(--space-4);
-        font-size: 0.8rem;
+        grid-template-columns: 1fr 80px 50px;
+        padding: var(--space-3);
+        font-size: 0.75rem;
+    }
+
+    .header-cell.duration-cell {
+        display: none;
     }
 
     .directory-item {
-        grid-template-columns: 1fr 80px 60px 50px;
-        padding: var(--space-3) var(--space-4);
+        grid-template-columns: 1fr 80px 50px;
+        padding: var(--space-2) var(--space-3);
+        min-height: 44px;
+    }
+
+    .item-duration {
+        display: none;
     }
 
     .item-icon {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
     }
 
     .item-icon svg {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
     }
 
     .item-title {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
 
     .item-size {
-        font-size: 0.8rem;
-    }
-
-    .duration-badge {
-        font-size: 0.7rem;
-        padding: var(--space-1) var(--space-2);
+        font-size: 0.75rem;
     }
 
     .more-btn {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
     }
 
     .more-btn svg {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
     }
 
     .modal {
@@ -1512,49 +1522,42 @@ body {
 
     .table-header {
         grid-template-columns: 1fr 60px 40px;
-        padding: var(--space-3);
-        font-size: 0.75rem;
-    }
-
-    .header-cell.duration-cell {
-        display: none;
+        padding: var(--space-2);
+        font-size: 0.7rem;
     }
 
     .directory-item {
         grid-template-columns: 1fr 60px 40px;
-        padding: var(--space-3);
-    }
-
-    .item-duration {
-        display: none;
+        padding: var(--space-2);
+        min-height: 40px;
     }
 
     .item-icon {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
     }
 
     .item-icon svg {
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
     }
 
     .item-title {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .item-size {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 
     .more-btn {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
     }
 
     .more-btn svg {
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
     }
 
     .sidebar {
@@ -1594,7 +1597,7 @@ body {
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
     .directory-item {
-        min-height: 60px;
+        min-height: 48px;
     }
     
     .more-btn {

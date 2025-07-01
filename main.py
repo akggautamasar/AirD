@@ -47,6 +47,11 @@ async def stream_page():
     return FileResponse("website/VideoPlayer.html")
 
 
+@app.get("/fast-player")
+async def fast_player_page():
+    return FileResponse("website/FastPlayer.html")
+
+
 @app.get("/pdf-viewer")
 async def pdf_viewer_page():
     return FileResponse("website/PDFViewer.html")
