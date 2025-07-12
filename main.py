@@ -46,6 +46,12 @@ async def home_page():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/favicon.ico")
+async def favicon():
+    """Serve favicon to prevent 404 errors"""
+    return Response(status_code=204)  # No Content
+
+
 @app.get("/stream")
 async def stream_page():
     try:
@@ -85,20 +91,31 @@ async def static_files(file_path):
 
 @app.get("/file")
 async def dl_file(request: Request):
-    from utils.directoryHandler import DRIVE_DATA
+    try:
+        from utils.directoryHandler import DRIVE_DATA
 
-    path = request.query_params["path"]
-    file = DRIVE_DATA.get_file(path)
-    
-    # Determine which channel to use for streaming
-    if hasattr(file, 'is_fast_import') and file.is_fast_import and file.source_channel:
-        # Use source channel for fast import files
-        channel = file.source_channel
-    else:
-        # Use storage channel for regular files
-        channel = STORAGE_CHANNEL
-    
-    return await media_streamer(channel, file.file_id, file.name, request)
+        path = request.query_params.get("path")
+        if not path:
+            raise HTTPException(status_code=400, detail="Path parameter is required")
+            
+        file = DRIVE_DATA.get_file(path)
+        if not file:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Determine which channel to use for streaming
+        if hasattr(file, 'is_fast_import') and file.is_fast_import and file.source_channel:
+            # Use source channel for fast import files
+            channel = file.source_channel
+        else:
+            # Use storage channel for regular files
+            channel = STORAGE_CHANNEL
+        
+        return await media_streamer(channel, file.file_id, file.name, request)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving file: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # Api Routes

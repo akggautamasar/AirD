@@ -4,18 +4,28 @@ from pyrogram.file_id import FileId
 from typing import Any, Optional, Union
 from pyrogram.raw.types.messages import Messages
 from datetime import datetime
+from utils.logger import Logger
 
+logger = Logger(__name__)
 
 async def parse_file_id(message: "Message") -> Optional[FileId]:
-    media = get_media_from_message(message)
-    if media:
-        return FileId.decode(media.file_id)
+    try:
+        media = get_media_from_message(message)
+        if media:
+            return FileId.decode(media.file_id)
+    except Exception as e:
+        logger.error(f"Error parsing file ID: {e}")
+    return None
 
 
 async def parse_file_unique_id(message: "Messages") -> Optional[str]:
-    media = get_media_from_message(message)
-    if media:
-        return media.file_unique_id
+    try:
+        media = get_media_from_message(message)
+        if media:
+            return media.file_unique_id
+    except Exception as e:
+        logger.error(f"Error parsing file unique ID: {e}")
+    return None
 
 
 async def get_file_ids(client: Client, chat_id, message_id) -> Optional[FileId]:

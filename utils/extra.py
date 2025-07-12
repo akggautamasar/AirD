@@ -80,7 +80,7 @@ def sort_directory_contents(contents, sort_by="date", sort_order="desc"):
 
 async def auto_ping_website():
     if WEBSITE_URL is not None:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
             while True:
                 try:
                     async with session.get(WEBSITE_URL) as response:
@@ -91,7 +91,7 @@ async def auto_ping_website():
                 except Exception as e:
                     logger.warning(f"Failed to ping website: {e}")
 
-                await asyncio.sleep(60)  # Ping website every minute
+                await asyncio.sleep(300)  # Ping website every 5 minutes to reduce load
 
 
 import shutil

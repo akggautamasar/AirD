@@ -12,22 +12,30 @@ logger = Logger(__name__)
 
 class ByteStreamer:
     def __init__(self, client: Client):
-        self.clean_timer = 30 * 60
+        self.clean_timer = 15 * 60  # Reduced cache time for better memory management
         self.client: Client = client
         self.cached_file_ids: Dict[int, FileId] = {}
         asyncio.create_task(self.clean_cache())
 
     async def get_file_properties(self, channel, message_id: int) -> FileId:
+        try:
         if message_id not in self.cached_file_ids:
             await self.generate_file_properties(channel, message_id)
         return self.cached_file_ids[message_id]
+        except Exception as e:
+            logger.error(f"Error getting file properties: {e}")
+            return None
 
     async def generate_file_properties(self, channel, message_id: int) -> FileId:
-        file_id = await get_file_ids(self.client, channel, message_id)
-        if not file_id:
-            raise Exception("FileNotFound")
-        self.cached_file_ids[message_id] = file_id
-        return self.cached_file_ids[message_id]
+        try:
+            file_id = await get_file_ids(self.client, channel, message_id)
+            if not file_id:
+                raise Exception("FileNotFound")
+            self.cached_file_ids[message_id] = file_id
+            return self.cached_file_ids[message_id]
+        except Exception as e:
+            logger.error(f"Error generating file properties: {e}")
+            raise
 
     async def generate_media_session(self, client: Client, file_id: FileId) -> Session:
         """
@@ -147,7 +155,7 @@ class ByteStreamer:
         Custom generator that yields the bytes of the media file.
         """
         client = self.client
-        logger.debug(f"Starting to yield file with chunk size {chunk_size}")
+        logger.debug(f"Starting to yield file with chunk size {chunk_size} for {part_count} parts")
         media_session = await self.generate_media_session(client, file_id)
 
         current_part = 1
@@ -186,6 +194,7 @@ class ByteStreamer:
                     )
         except (TimeoutError, AttributeError) as e:
             logger.warning(f"Timeout or attribute error during file streaming: {e}")
+            raise
         except Exception as e:
             logger.error(f"Unexpected error during file streaming: {e}")
             raise
@@ -198,5 +207,6 @@ class ByteStreamer:
         """
         while True:
             await asyncio.sleep(self.clean_timer)
+            cache_size = len(self.cached_file_ids)
             self.cached_file_ids.clear()
-            logger.debug("Cleaned the cache")
+            logger.debug(f"Cleaned cache - removed {cache_size} entries")

@@ -76,126 +76,161 @@ class NewDriveData:
         self.isUpdated = False
 
     def save(self) -> None:
-        with open(drive_cache_path, "wb") as f:
-            dill.dump(self, f)
-        self.isUpdated = True
-        logger.info("Drive data saved successfully.")
+        try:
+            with open(drive_cache_path, "wb") as f:
+                dill.dump(self, f)
+            self.isUpdated = True
+            logger.info("Drive data saved successfully.")
+        except Exception as e:
+            logger.error(f"Error saving drive data: {e}")
 
     def new_folder(self, path: str, name: str) -> None:
         logger.info(f"Creating new folder '{name}' in path '{path}'.")
 
-        folder = Folder(name, path)
-        if path == "/":
-            directory_folder: Folder = self.contents[path]
-            directory_folder.contents[folder.id] = folder
-        else:
-            paths = path.strip("/").split("/")
-            directory_folder: Folder = self.contents["/"]
-            for path in paths:
-                directory_folder = directory_folder.contents[path]
-            directory_folder.contents[folder.id] = folder
+        try:
+            folder = Folder(name, path)
+            if path == "/":
+                directory_folder: Folder = self.contents[path]
+                directory_folder.contents[folder.id] = folder
+            else:
+                paths = path.strip("/").split("/")
+                directory_folder: Folder = self.contents["/"]
+                for path_part in paths:
+                    directory_folder = directory_folder.contents[path_part]
+                directory_folder.contents[folder.id] = folder
 
-        self.save()
-        return folder.path + folder.id
+            self.save()
+            return folder.path + folder.id
+        except Exception as e:
+            logger.error(f"Error creating folder '{name}': {e}")
+            raise
 
     def new_file(self, path: str, name: str, file_id: int, size: int, duration: int = 0) -> None:
         logger.info(f"Creating new file '{name}' in path '{path}'.")
 
-        file = File(name, file_id, size, path, duration)
-        if path == "/":
-            directory_folder: Folder = self.contents[path]
-            directory_folder.contents[file.id] = file
-        else:
-            paths = path.strip("/").split("/")
-            directory_folder: Folder = self.contents["/"]
-            for path in paths:
-                directory_folder = directory_folder.contents[path]
-            directory_folder.contents[file.id] = file
+        try:
+            file = File(name, file_id, size, path, duration)
+            if path == "/":
+                directory_folder: Folder = self.contents[path]
+                directory_folder.contents[file.id] = file
+            else:
+                paths = path.strip("/").split("/")
+                directory_folder: Folder = self.contents["/"]
+                for path_part in paths:
+                    directory_folder = directory_folder.contents[path_part]
+                directory_folder.contents[file.id] = file
 
-        self.save()
+            self.save()
+        except Exception as e:
+            logger.error(f"Error creating file '{name}': {e}")
+            raise
 
     def new_fast_import_file(self, path: str, name: str, file_id: int, size: int, duration: int = 0, source_channel: int = None) -> None:
         """Create a new fast import file that references source channel"""
         logger.info(f"Creating new fast import file '{name}' in path '{path}' from channel {source_channel}.")
 
-        file = File(name, file_id, size, path, duration, source_channel)
-        if path == "/":
-            directory_folder: Folder = self.contents[path]
-            directory_folder.contents[file.id] = file
-        else:
-            paths = path.strip("/").split("/")
-            directory_folder: Folder = self.contents["/"]
-            for path in paths:
-                directory_folder = directory_folder.contents[path]
-            directory_folder.contents[file.id] = file
+        try:
+            file = File(name, file_id, size, path, duration, source_channel)
+            if path == "/":
+                directory_folder: Folder = self.contents[path]
+                directory_folder.contents[file.id] = file
+            else:
+                paths = path.strip("/").split("/")
+                directory_folder: Folder = self.contents["/"]
+                for path_part in paths:
+                    directory_folder = directory_folder.contents[path_part]
+                directory_folder.contents[file.id] = file
 
-        self.save()
+            self.save()
+        except Exception as e:
+            logger.error(f"Error creating fast import file '{name}': {e}")
+            raise
 
     def get_directory(
         self, path: str, is_admin: bool = True, auth: str = None
     ) -> Folder:
-        folder_data: Folder = self.contents["/"]
-        auth_success = False
-        auth_home_path = None
+        try:
+            folder_data: Folder = self.contents["/"]
+            auth_success = False
+            auth_home_path = None
 
-        if path != "/":
-            path = path.strip("/")
+            if path != "/":
+                path = path.strip("/")
 
-            if "/" in path:
-                path = path.split("/")
-            else:
-                path = [path]
+                if "/" in path:
+                    path_parts = path.split("/")
+                else:
+                    path_parts = [path]
 
-            for folder in path:
-                folder_data = folder_data.contents[folder]
+                for folder in path_parts:
+                    if folder in folder_data.contents:
+                        folder_data = folder_data.contents[folder]
 
-                if auth in folder_data.auth_hashes:
-                    auth_success = True
-                    auth_home_path = (
-                        "/" + folder_data.path.strip("/") + "/" + folder_data.id
-                    )
+                        if hasattr(folder_data, 'auth_hashes') and auth in folder_data.auth_hashes:
+                            auth_success = True
+                            auth_home_path = (
+                                "/" + folder_data.path.strip("/") + "/" + folder_data.id
+                            )
+                    else:
+                        logger.warning(f"Folder '{folder}' not found in path '{path}'")
+                        return None
 
-        if not is_admin and not auth_success:
-            logger.warning(f"Unauthorized access attempt to path '{path}'.")
+            if not is_admin and not auth_success:
+                logger.warning(f"Unauthorized access attempt to path '{path}'.")
+                return None
+
+            if auth_success:
+                logger.info(f"Authorization successful for path '{path}'.")
+                return folder_data, auth_home_path
+
+            return folder_data
+        except Exception as e:
+            logger.error(f"Error getting directory '{path}': {e}")
             return None
 
-        if auth_success:
-            logger.info(f"Authorization successful for path '{path}'.")
-            return folder_data, auth_home_path
+    def get_folder_auth(self, path: str) -> str:
+        try:
+            auth = getRandomID()
+            folder_data: Folder = self.contents["/"]
 
-        return folder_data
+            if path != "/":
+                path = path.strip("/")
 
-    def get_folder_auth(self, path: str) -> None:
-        auth = getRandomID()
-        folder_data: Folder = self.contents["/"]
+                if "/" in path:
+                    path_parts = path.split("/")
+                else:
+                    path_parts = [path]
 
-        if path != "/":
-            path = path.strip("/")
+                for folder in path_parts:
+                    if folder in folder_data.contents:
+                        folder_data = folder_data.contents[folder]
+                    else:
+                        logger.warning(f"Folder '{folder}' not found in path")
+                        return None
 
-            if "/" in path:
-                path = path.split("/")
-            else:
-                path = [path]
+            if not hasattr(folder_data, 'auth_hashes'):
+                folder_data.auth_hashes = []
+            
+            folder_data.auth_hashes.append(auth)
+            self.save()
+            logger.info(f"Authorization hash generated for path '{path}'.")
+            return auth
+        except Exception as e:
+            logger.error(f"Error generating folder auth for '{path}': {e}")
+            return None
 
-            for folder in path:
-                folder_data = folder_data.contents[folder]
-
-        folder_data.auth_hashes.append(auth)
-        self.save()
-        logger.info(f"Authorization hash generated for path '{path}'.")
-        return auth
-
-    def get_file(self, path) -> File:
+    def get_file(self, path: str) -> File:
         try:
             if not path or path == '/':
                 return None
                 
-        if len(path.strip("/").split("/")) > 0:
-            folder_path = "/" + "/".join(path.strip("/").split("/")[:-1])
-            file_id = path.strip("/").split("/")[-1]
-        else:
-            folder_path = "/"
-            file_id = path.strip("/")
+            path_parts = path.strip("/").split("/")
+            if len(path_parts) > 0:
+                folder_path = "/" + "/".join(path_parts[:-1]) if len(path_parts) > 1 else "/"
+                file_id = path_parts[-1]
+            else:
+                folder_path = "/"
+                file_id = path.strip("/")
 
             folder_data = self.get_directory(folder_path)
             if not folder_data or not hasattr(folder_data, 'contents'):
@@ -207,199 +242,260 @@ class NewDriveData:
             return None
 
     def rename_file_folder(self, path: str, new_name: str) -> None:
-        if len(path.strip("/").split("/")) > 0:
-            folder_path = "/" + "/".join(path.strip("/").split("/")[:-1])
-            file_id = path.strip("/").split("/")[-1]
-        else:
-            folder_path = "/"
-            file_id = path.strip("/")
-        folder_data = self.get_directory(folder_path)
-        folder_data.contents[file_id].name = new_name
-        self.save()
-        logger.info(f"Item at path '{path}' renamed to '{new_name}'.")
+        try:
+            path_parts = path.strip("/").split("/")
+            if len(path_parts) > 0:
+                folder_path = "/" + "/".join(path_parts[:-1]) if len(path_parts) > 1 else "/"
+                file_id = path_parts[-1]
+            else:
+                folder_path = "/"
+                file_id = path.strip("/")
+                
+            folder_data = self.get_directory(folder_path)
+            if folder_data and file_id in folder_data.contents:
+                folder_data.contents[file_id].name = new_name
+                self.save()
+                logger.info(f"Item at path '{path}' renamed to '{new_name}'.")
+            else:
+                logger.warning(f"Item not found at path '{path}'")
+        except Exception as e:
+            logger.error(f"Error renaming item at '{path}': {e}")
 
     def trash_file_folder(self, path: str, trash: bool) -> None:
-        action = "Trashing" if trash else "Restoring"
-
-        if len(path.strip("/").split("/")) > 0:
-            folder_path = "/" + "/".join(path.strip("/").split("/")[:-1])
-            file_id = path.strip("/").split("/")[-1]
-        else:
-            folder_path = "/"
-            file_id = path.strip("/")
-        folder_data = self.get_directory(folder_path)
-        folder_data.contents[file_id].trash = trash
-        self.save()
-        logger.info(f"Item at path '{path}' {action.lower()} successfully.")
+        try:
+            action = "Trashing" if trash else "Restoring"
+            path_parts = path.strip("/").split("/")
+            
+            if len(path_parts) > 0:
+                folder_path = "/" + "/".join(path_parts[:-1]) if len(path_parts) > 1 else "/"
+                file_id = path_parts[-1]
+            else:
+                folder_path = "/"
+                file_id = path.strip("/")
+                
+            folder_data = self.get_directory(folder_path)
+            if folder_data and file_id in folder_data.contents:
+                folder_data.contents[file_id].trash = trash
+                self.save()
+                logger.info(f"Item at path '{path}' {action.lower()} successfully.")
+            else:
+                logger.warning(f"Item not found at path '{path}'")
+        except Exception as e:
+            logger.error(f"Error {action.lower()} item at '{path}': {e}")
 
     def get_trashed_files_folders(self):
-        root_dir = self.get_directory("/")
-        trash_data = {}
+        try:
+            root_dir = self.get_directory("/")
+            trash_data = {}
 
-        def traverse_directory(folder):
-            for item in folder.contents.values():
-                if item.type == "folder":
-                    if item.trash:
-                        trash_data[item.id] = item
-                    else:
-                        # Recursively traverse the subfolder
-                        traverse_directory(item)
-                elif item.type == "file":
-                    if item.trash:
-                        trash_data[item.id] = item
+            def traverse_directory(folder):
+                if not folder or not hasattr(folder, 'contents'):
+                    return
+                    
+                for item in folder.contents.values():
+                    if item.type == "folder":
+                        if item.trash:
+                            trash_data[item.id] = item
+                        else:
+                            # Recursively traverse the subfolder
+                            traverse_directory(item)
+                    elif item.type == "file":
+                        if item.trash:
+                            trash_data[item.id] = item
 
-        traverse_directory(root_dir)
-        return trash_data
+            traverse_directory(root_dir)
+            return trash_data
+        except Exception as e:
+            logger.error(f"Error getting trashed files: {e}")
+            return {}
 
     def delete_file_folder(self, path: str) -> None:
+        try:
+            path_parts = path.strip("/").split("/")
+            if len(path_parts) > 0:
+                folder_path = "/" + "/".join(path_parts[:-1]) if len(path_parts) > 1 else "/"
+                file_id = path_parts[-1]
+            else:
+                folder_path = "/"
+                file_id = path.strip("/")
 
-        if len(path.strip("/").split("/")) > 0:
-            folder_path = "/" + "/".join(path.strip("/").split("/")[:-1])
-            file_id = path.strip("/").split("/")[-1]
-        else:
-            folder_path = "/"
-            file_id = path.strip("/")
-
-        folder_data = self.get_directory(folder_path)
-        del folder_data.contents[file_id]
-        self.save()
-        logger.info(f"Item at path '{path}' deleted successfully.")
+            folder_data = self.get_directory(folder_path)
+            if folder_data and file_id in folder_data.contents:
+                del folder_data.contents[file_id]
+                self.save()
+                logger.info(f"Item at path '{path}' deleted successfully.")
+            else:
+                logger.warning(f"Item not found at path '{path}'")
+        except Exception as e:
+            logger.error(f"Error deleting item at '{path}': {e}")
 
     def move_file_folder(self, source_path: str, destination_path: str) -> None:
         """Move a file or folder from source to destination"""
         logger.info(f"Moving item from '{source_path}' to '{destination_path}'.")
         
-        # Get source item
-        if len(source_path.strip("/").split("/")) > 0:
-            source_folder_path = "/" + "/".join(source_path.strip("/").split("/")[:-1])
-            source_item_id = source_path.strip("/").split("/")[-1]
-        else:
-            source_folder_path = "/"
-            source_item_id = source_path.strip("/")
-        
-        source_folder = self.get_directory(source_folder_path)
-        if source_item_id not in source_folder.contents:
-            raise Exception("Source item not found")
-        
-        source_item = source_folder.contents[source_item_id]
-        
-        # Get destination folder
-        destination_folder = self.get_directory(destination_path)
-        
-        # Check if item with same name already exists in destination
-        for item in destination_folder.contents.values():
-            if item.name == source_item.name:
-                raise Exception(f"Item with name '{source_item.name}' already exists in destination folder")
-        
-        # Move the item
-        destination_folder.contents[source_item_id] = source_item
-        del source_folder.contents[source_item_id]
-        
-        # Update the path of the moved item
-        source_item.path = destination_path
-        
-        self.save()
-        logger.info(f"Item moved successfully from '{source_path}' to '{destination_path}'.")
+        try:
+            # Get source item
+            source_parts = source_path.strip("/").split("/")
+            if len(source_parts) > 0:
+                source_folder_path = "/" + "/".join(source_parts[:-1]) if len(source_parts) > 1 else "/"
+                source_item_id = source_parts[-1]
+            else:
+                source_folder_path = "/"
+                source_item_id = source_path.strip("/")
+            
+            source_folder = self.get_directory(source_folder_path)
+            if not source_folder or source_item_id not in source_folder.contents:
+                raise Exception("Source item not found")
+            
+            source_item = source_folder.contents[source_item_id]
+            
+            # Get destination folder
+            destination_folder = self.get_directory(destination_path)
+            if not destination_folder:
+                raise Exception("Destination folder not found")
+            
+            # Check if item with same name already exists in destination
+            for item in destination_folder.contents.values():
+                if item.name == source_item.name:
+                    raise Exception(f"Item with name '{source_item.name}' already exists in destination folder")
+            
+            # Move the item
+            destination_folder.contents[source_item_id] = source_item
+            del source_folder.contents[source_item_id]
+            
+            # Update the path of the moved item
+            source_item.path = destination_path
+            
+            self.save()
+            logger.info(f"Item moved successfully from '{source_path}' to '{destination_path}'.")
+        except Exception as e:
+            logger.error(f"Error moving item: {e}")
+            raise
 
     def copy_file_folder(self, source_path: str, destination_path: str) -> None:
         """Copy a file or folder from source to destination"""
         logger.info(f"Copying item from '{source_path}' to '{destination_path}'.")
         
-        # Get source item
-        if len(source_path.strip("/").split("/")) > 0:
-            source_folder_path = "/" + "/".join(source_path.strip("/").split("/")[:-1])
-            source_item_id = source_path.strip("/").split("/")[-1]
-        else:
-            source_folder_path = "/"
-            source_item_id = source_path.strip("/")
-        
-        source_folder = self.get_directory(source_folder_path)
-        if source_item_id not in source_folder.contents:
-            raise Exception("Source item not found")
-        
-        source_item = source_folder.contents[source_item_id]
-        
-        # Get destination folder
-        destination_folder = self.get_directory(destination_path)
-        
-        # Check if item with same name already exists in destination
-        for item in destination_folder.contents.values():
-            if item.name == source_item.name:
-                raise Exception(f"Item with name '{source_item.name}' already exists in destination folder")
-        
-        # Create a deep copy of the source item
-        copied_item = copy.deepcopy(source_item)
-        
-        # Generate new ID for the copied item and update used_ids
-        copied_item.id = getRandomID()
-        
-        # Update the path of the copied item
-        copied_item.path = destination_path
-        
-        # If it's a folder, recursively update IDs and paths for all contents
-        if copied_item.type == "folder":
-            self._update_copied_folder_contents(copied_item, destination_path)
-        
-        # Add the copied item to destination
-        destination_folder.contents[copied_item.id] = copied_item
-        
-        self.save()
-        logger.info(f"Item copied successfully from '{source_path}' to '{destination_path}'.")
+        try:
+            # Get source item
+            source_parts = source_path.strip("/").split("/")
+            if len(source_parts) > 0:
+                source_folder_path = "/" + "/".join(source_parts[:-1]) if len(source_parts) > 1 else "/"
+                source_item_id = source_parts[-1]
+            else:
+                source_folder_path = "/"
+                source_item_id = source_path.strip("/")
+            
+            source_folder = self.get_directory(source_folder_path)
+            if not source_folder or source_item_id not in source_folder.contents:
+                raise Exception("Source item not found")
+            
+            source_item = source_folder.contents[source_item_id]
+            
+            # Get destination folder
+            destination_folder = self.get_directory(destination_path)
+            if not destination_folder:
+                raise Exception("Destination folder not found")
+            
+            # Check if item with same name already exists in destination
+            for item in destination_folder.contents.values():
+                if item.name == source_item.name:
+                    raise Exception(f"Item with name '{source_item.name}' already exists in destination folder")
+            
+            # Create a deep copy of the source item
+            copied_item = copy.deepcopy(source_item)
+            
+            # Generate new ID for the copied item and update used_ids
+            copied_item.id = getRandomID()
+            
+            # Update the path of the copied item
+            copied_item.path = destination_path
+            
+            # If it's a folder, recursively update IDs and paths for all contents
+            if copied_item.type == "folder":
+                self._update_copied_folder_contents(copied_item, destination_path)
+            
+            # Add the copied item to destination
+            destination_folder.contents[copied_item.id] = copied_item
+            
+            self.save()
+            logger.info(f"Item copied successfully from '{source_path}' to '{destination_path}'.")
+        except Exception as e:
+            logger.error(f"Error copying item: {e}")
+            raise
 
     def _update_copied_folder_contents(self, folder, new_base_path):
         """Recursively update IDs and paths for copied folder contents"""
-        for item_id, item in list(folder.contents.items()):
-            # Generate new ID
-            new_id = getRandomID()
-            
-            # Update the item's ID and path
-            item.id = new_id
-            item.path = new_base_path + "/" + folder.id
-            
-            # Update the dictionary key
-            del folder.contents[item_id]
-            folder.contents[new_id] = item
-            
-            # If it's a folder, recursively update its contents
-            if item.type == "folder":
-                self._update_copied_folder_contents(item, item.path)
+        try:
+            for item_id, item in list(folder.contents.items()):
+                # Generate new ID
+                new_id = getRandomID()
+                
+                # Update the item's ID and path
+                item.id = new_id
+                item.path = new_base_path + "/" + folder.id
+                
+                # Update the dictionary key
+                del folder.contents[item_id]
+                folder.contents[new_id] = item
+                
+                # If it's a folder, recursively update its contents
+                if item.type == "folder":
+                    self._update_copied_folder_contents(item, item.path)
+        except Exception as e:
+            logger.error(f"Error updating copied folder contents: {e}")
 
     def get_folder_tree(self) -> dict:
         """Get a tree structure of all folders for move/copy operations"""
-        def build_tree(folder, current_path=""):
-            tree = {
-                "id": folder.id,
-                "name": folder.name,
-                "path": current_path,
-                "children": []
-            }
+        try:
+            def build_tree(folder, current_path=""):
+                tree = {
+                    "id": folder.id,
+                    "name": folder.name,
+                    "path": current_path,
+                    "children": []
+                }
+                
+                if hasattr(folder, 'contents'):
+                    for item in folder.contents.values():
+                        if item.type == "folder" and not item.trash:
+                            child_path = f"{current_path}/{item.id}" if current_path else f"/{item.id}"
+                            tree["children"].append(build_tree(item, child_path))
+                
+                return tree
             
-            for item in folder.contents.values():
-                if item.type == "folder" and not item.trash:
-                    child_path = f"{current_path}/{item.id}" if current_path else f"/{item.id}"
-                    tree["children"].append(build_tree(item, child_path))
-            
-            return tree
-        
-        root_folder = self.get_directory("/")
-        return build_tree(root_folder, "/")
+            root_folder = self.get_directory("/")
+            if root_folder:
+                return build_tree(root_folder, "/")
+            else:
+                return {"id": "root", "name": "/", "path": "/", "children": []}
+        except Exception as e:
+            logger.error(f"Error building folder tree: {e}")
+            return {"id": "root", "name": "/", "path": "/", "children": []}
 
     def search_file_folder(self, query: str):
         logger.info(f"Searching for items matching query '{query}'.")
 
-        root_dir = self.get_directory("/")
-        search_results = {}
+        try:
+            root_dir = self.get_directory("/")
+            search_results = {}
 
-        def traverse_directory(folder):
-            for item in folder.contents.values():
-                if query.lower() in item.name.lower():
-                    search_results[item.id] = item
-                if item.type == "folder":
-                    traverse_directory(item)
+            def traverse_directory(folder):
+                if not folder or not hasattr(folder, 'contents'):
+                    return
+                    
+                for item in folder.contents.values():
+                    if query.lower() in item.name.lower() and not item.trash:
+                        search_results[item.id] = item
+                    if item.type == "folder" and not item.trash:
+                        traverse_directory(item)
 
-        traverse_directory(root_dir)
-        logger.info(f"Search completed. Found {len(search_results)} matching items.")
-        return search_results
+            traverse_directory(root_dir)
+            logger.info(f"Search completed. Found {len(search_results)} matching items.")
+            return search_results
+        except Exception as e:
+            logger.error(f"Error during search: {e}")
+            return {}
 
 
 class NewBotMode:
@@ -411,10 +507,13 @@ class NewBotMode:
         self.current_folder_name = "/ (root directory)"
 
     def set_folder(self, folder_path: str, name: str) -> None:
-        self.current_folder = folder_path
-        self.current_folder_name = name
-        self.drive_data.save()
-        logger.info(f"Current folder set to '{name}' at path '{folder_path}'.")
+        try:
+            self.current_folder = folder_path
+            self.current_folder_name = name
+            self.drive_data.save()
+            logger.info(f"Current folder set to '{name}' at path '{folder_path}'.")
+        except Exception as e:
+            logger.error(f"Error setting folder: {e}")
 
 
 DRIVE_DATA: NewDriveData = None
@@ -473,31 +572,37 @@ async def backup_drive_data(loop=True):
 async def init_drive_data():
     global DRIVE_DATA
 
-    logger.info("Initializing drive data.")
-    root_dir = DRIVE_DATA.get_directory("/")
-    if not hasattr(root_dir, "auth_hashes"):
-        root_dir.auth_hashes = []
+    try:
+        logger.info("Initializing drive data.")
+        root_dir = DRIVE_DATA.get_directory("/")
+        if root_dir and not hasattr(root_dir, "auth_hashes"):
+            root_dir.auth_hashes = []
 
-    def traverse_directory(folder):
-        for item in folder.contents.values():
-            if item.type == "folder":
-                traverse_directory(item)
+        def traverse_directory(folder):
+            if not folder or not hasattr(folder, 'contents'):
+                return
+                
+            for item in folder.contents.values():
+                if item.type == "folder":
+                    traverse_directory(item)
 
-                if not hasattr(item, "auth_hashes"):
-                    item.auth_hashes = []
-            elif item.type == "file":
-                # Add duration attribute to existing files if not present
-                if not hasattr(item, "duration"):
-                    item.duration = 0
-                # Add fast import attributes to existing files if not present
-                if not hasattr(item, "source_channel"):
-                    item.source_channel = None
-                if not hasattr(item, "is_fast_import"):
-                    item.is_fast_import = False
+                    if not hasattr(item, "auth_hashes"):
+                        item.auth_hashes = []
+                elif item.type == "file":
+                    # Add duration attribute to existing files if not present
+                    if not hasattr(item, "duration"):
+                        item.duration = 0
+                    # Add fast import attributes to existing files if not present
+                    if not hasattr(item, "source_channel"):
+                        item.source_channel = None
+                    if not hasattr(item, "is_fast_import"):
+                        item.is_fast_import = False
 
-    traverse_directory(root_dir)
-    DRIVE_DATA.save()
-    logger.info("Drive data initialization completed.")
+        traverse_directory(root_dir)
+        DRIVE_DATA.save()
+        logger.info("Drive data initialization completed.")
+    except Exception as e:
+        logger.error(f"Error initializing drive data: {e}")
 
 
 async def loadDriveData():
@@ -514,13 +619,11 @@ async def loadDriveData():
             )
         except Exception as e:
             logger.error(f"Error fetching backup message: {e}")
-
             # Forcefully terminates the program immediately
             os.kill(os.getpid(), signal.SIGKILL)
 
         if not msg.document:
-            logger.error(f"Error fetching backup message: {e}")
-
+            logger.error(f"Error fetching backup message: No document found")
             # Forcefully terminates the program immediately
             os.kill(os.getpid(), signal.SIGKILL)
 
@@ -541,8 +644,11 @@ async def loadDriveData():
     await init_drive_data()
 
     if config.MAIN_BOT_TOKEN:
-        from utils.bot_mode import start_bot_mode
+        try:
+            from utils.bot_mode import start_bot_mode
 
-        BOT_MODE = NewBotMode(DRIVE_DATA)
-        await start_bot_mode(DRIVE_DATA, BOT_MODE)
-        logger.info("Bot mode started.")
+            BOT_MODE = NewBotMode(DRIVE_DATA)
+            await start_bot_mode(DRIVE_DATA, BOT_MODE)
+            logger.info("Bot mode started.")
+        except Exception as e:
+            logger.error(f"Error starting bot mode: {e}")

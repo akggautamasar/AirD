@@ -30,7 +30,7 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
                 # If it's a fast import file, use the source channel
                 if file_obj and hasattr(file_obj, 'is_fast_import') and file_obj.is_fast_import and file_obj.source_channel:
                     channel = file_obj.source_channel
-                    logger.info(f"Using fast import source channel {channel} for file {file_name}")
+                    logger.debug(f"Using fast import source channel {channel} for file {file_name}")
             except Exception as e:
                 logger.debug(f"Could not get file object for path {file_path}: {e}")
                 # Continue with original channel (storage channel)
@@ -50,6 +50,12 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
 
     try:
         file_id = await tg_connect.get_file_properties(channel, message_id)
+        if not file_id:
+            logger.error(f"Could not get file properties for message {message_id} in channel {channel}")
+            return Response(
+                status_code=404,
+                content="File not found or inaccessible",
+            )
         file_size = file_id.file_size
     except Exception as e:
         logger.error(f"Failed to get file properties for message {message_id} in channel {channel}: {e}")
