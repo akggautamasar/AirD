@@ -19,17 +19,32 @@ async def parse_file_unique_id(message: "Messages") -> Optional[str]:
 
 
 async def get_file_ids(client: Client, chat_id, message_id) -> Optional[FileId]:
-    message = await client.get_messages(chat_id, int(message_id))
-    if message.empty:
-        raise Exception("FileNotFound")
-    media = get_media_from_message(message)
-    file_unique_id = await parse_file_unique_id(message)
-    file_id = await parse_file_id(message)
-    setattr(file_id, "file_size", getattr(media, "file_size", 0))
-    setattr(file_id, "mime_type", getattr(media, "mime_type", ""))
-    setattr(file_id, "file_name", getattr(media, "file_name", ""))
-    setattr(file_id, "unique_id", file_unique_id)
-    return file_id
+    try:
+        message = await client.get_messages(chat_id, int(message_id))
+        if message.empty:
+            logger.warning(f"Message {message_id} not found in chat {chat_id}")
+            return None
+            
+        media = get_media_from_message(message)
+        if not media:
+            logger.warning(f"No media found in message {message_id}")
+            return None
+            
+        file_unique_id = await parse_file_unique_id(message)
+        file_id = await parse_file_id(message)
+        
+        if not file_id:
+            logger.warning(f"Could not parse file ID from message {message_id}")
+            return None
+            
+        setattr(file_id, "file_size", getattr(media, "file_size", 0))
+        setattr(file_id, "mime_type", getattr(media, "mime_type", ""))
+        setattr(file_id, "file_name", getattr(media, "file_name", ""))
+        setattr(file_id, "unique_id", file_unique_id)
+        return file_id
+    except Exception as e:
+        logger.error(f"Error getting file IDs for message {message_id} in chat {chat_id}: {e}")
+        return None
 
 
 def get_media_from_message(message: "Message") -> Any:

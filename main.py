@@ -39,22 +39,38 @@ logger = Logger(__name__)
 
 @app.get("/")
 async def home_page():
-    return FileResponse("website/home.html")
+    try:
+        return FileResponse("website/home.html")
+    except Exception as e:
+        logger.error(f"Error serving home page: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/stream")
 async def stream_page():
-    return FileResponse("website/VideoPlayer.html")
+    try:
+        return FileResponse("website/VideoPlayer.html")
+    except Exception as e:
+        logger.error(f"Error serving stream page: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/fast-player")
 async def fast_player_page():
-    return FileResponse("website/FastPlayer.html")
+    try:
+        return FileResponse("website/FastPlayer.html")
+    except Exception as e:
+        logger.error(f"Error serving fast player page: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/pdf-viewer")
 async def pdf_viewer_page():
-    return FileResponse("website/PDFViewer.html")
+    try:
+        return FileResponse("website/PDFViewer.html")
+    except Exception as e:
+        logger.error(f"Error serving PDF viewer page: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/static/{file_path:path}")
