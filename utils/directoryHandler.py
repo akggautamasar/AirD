@@ -186,6 +186,10 @@ class NewDriveData:
         return auth
 
     def get_file(self, path) -> File:
+        try:
+            if not path or path == '/':
+                return None
+                
         if len(path.strip("/").split("/")) > 0:
             folder_path = "/" + "/".join(path.strip("/").split("/")[:-1])
             file_id = path.strip("/").split("/")[-1]
@@ -193,8 +197,14 @@ class NewDriveData:
             folder_path = "/"
             file_id = path.strip("/")
 
-        folder_data = self.get_directory(folder_path)
-        return folder_data.contents[file_id]
+            folder_data = self.get_directory(folder_path)
+            if not folder_data or not hasattr(folder_data, 'contents'):
+                return None
+                
+            return folder_data.contents.get(file_id)
+        except Exception as e:
+            logger.warning(f"Error getting file at path {path}: {e}")
+            return None
 
     def rename_file_folder(self, path: str, new_name: str) -> None:
         if len(path.strip("/").split("/")) > 0:

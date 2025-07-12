@@ -147,7 +147,7 @@ class ByteStreamer:
         Custom generator that yields the bytes of the media file.
         """
         client = self.client
-        logger.debug(f"Starting to yielding file with client.")
+        logger.debug(f"Starting to yield file with chunk size {chunk_size}")
         media_session = await self.generate_media_session(client, file_id)
 
         current_part = 1
@@ -184,10 +184,13 @@ class ByteStreamer:
                             location=location, offset=offset, limit=chunk_size
                         ),
                     )
-        except (TimeoutError, AttributeError):
-            pass
+        except (TimeoutError, AttributeError) as e:
+            logger.warning(f"Timeout or attribute error during file streaming: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error during file streaming: {e}")
+            raise
         finally:
-            logger.debug(f"Finished yielding file with {current_part} parts.")
+            logger.debug(f"Finished yielding file with {current_part-1} parts.")
 
     async def clean_cache(self) -> None:
         """
