@@ -1,11 +1,10 @@
-import math, mimetypes
+import math
+import mimetypes
 from fastapi.responses import StreamingResponse, Response
 from utils.logger import Logger
 from utils.streamer.custom_dl import ByteStreamer
 from utils.streamer.file_properties import get_name
-from utils.clients import (
-    get_client,
-)
+from utils.clients import get_client
 from urllib.parse import quote
 from utils.directoryHandler import DRIVE_DATA
 
@@ -19,26 +18,19 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
 
     range_header = request.headers.get("Range", 0)
 
-    # Get the file to check if it's a fast import file
+    # Support fast import files (stream directly from source channel)
     try:
-        # Get file path from request or construct it
         file_path = request.query_params.get("path", "")
         if file_path and DRIVE_DATA:
             try:
                 file_obj = DRIVE_DATA.get_file(file_path)
-                
-                # If it's a fast import file, use the source channel
                 if file_obj and hasattr(file_obj, 'is_fast_import') and file_obj.is_fast_import and file_obj.source_channel:
                     channel = file_obj.source_channel
                     logger.debug(f"Using fast import source channel {channel} for file {file_name}")
             except Exception as e:
                 logger.debug(f"Could not get file object for path {file_path}: {e}")
-                # Continue with original channel (storage channel)
-        else:
-            logger.debug(f"No file path provided or DRIVE_DATA not available")
     except Exception as e:
         logger.debug(f"Error in fast import check: {e}")
-        # Continue with original channel (storage channel)
 
     faster_client = get_client()
 
@@ -64,6 +56,7 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
             content="File not found or inaccessible",
         )
 
+    # Parse range header
     if range_header:
         try:
             from_bytes, until_bytes = range_header.replace("bytes=", "").split("-")
@@ -84,13 +77,13 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
             headers={"Content-Range": f"bytes */{file_size}"},
         )
 
-    # Optimize chunk size based on file size and range
-    if file_size < 10 * 1024 * 1024:  # Files smaller than 10MB
-        chunk_size = 256 * 1024  # 256KB chunks
-    elif file_size < 100 * 1024 * 1024:  # Files smaller than 100MB
-        chunk_size = 512 * 1024  # 512KB chunks
-    else:  # Large files
-        chunk_size = 1024 * 1024  # 1MB chunks
+    # Optimize chunk size
+    if file_size < 10 * 1024 * 1024:
+        chunk_size = 256 * 1024
+    elif file_size < 100 * 1024 * 1024:
+        chunk_size = 512 * 1024
+    else:
+        chunk_size = 1024 * 1024
 
     until_bytes = min(until_bytes, file_size - 1)
 
@@ -100,7 +93,7 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
 
     req_length = until_bytes - from_bytes + 1
     part_count = math.ceil(until_bytes / chunk_size) - math.floor(offset / chunk_size)
-    
+
     try:
         body = tg_connect.yield_file(
             file_id, offset, first_part_cut, last_part_cut, part_count, chunk_size
@@ -123,28 +116,40 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
     ):
         disposition = "inline"
 
-    # Add caching headers for better performance
+    # Caching headers
     cache_headers = {
         "Cache-Control": "public, max-age=3600",
         "ETag": f'"{message_id}-{file_size}"',
     }
 
-    # Check if client sent If-None-Match header
+    # Check for If-None-Match (304 Not Modified)
     if_none_match = request.headers.get("If-None-Match")
     if if_none_match and if_none_match.strip('"') == f"{message_id}-{file_size}":
         return Response(status_code=304)
 
-    response_headers = {
-        "Content-Type": f"{mime_type}",
-        "Content-Range": f"bytes {from_bytes}-{until_bytes}/{file_size}",
-        "Content-Length": str(req_length),
-        "Content-Disposition": f'{disposition}; filename="{quote(file_name)}"',
-        "Accept-Ranges": "bytes",
-        **cache_headers,
-    }
+    # FIXED: Proper 200 vs 206 handling
+    if range_header:
+        status_code = 206
+        response_headers = {
+            "Content-Type": mime_type,
+            "Content-Range": f"bytes {from_bytes}-{until_bytes}/{file_size}",
+            "Content-Length": str(req_length),
+            "Content-Disposition": f'{disposition}; filename="{quote(file_name)}"',
+            "Accept-Ranges": "bytes",
+            **cache_headers,
+        }
+    else:
+        status_code = 200
+        response_headers = {
+            "Content-Type": mime_type,
+            "Content-Length": str(req_length),
+            "Content-Disposition": f'{disposition}; filename="{quote(file_name)}"',
+            "Accept-Ranges": "bytes",
+            **cache_headers,
+        }
 
     return StreamingResponse(
-        status_code=206 if range_header else 200,
+        status_code=status_code,
         content=body,
         headers=response_headers,
         media_type=mime_type,
