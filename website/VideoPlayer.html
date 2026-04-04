@@ -511,9 +511,7 @@
         <!-- Speed Indicator -->
         <div class="speed-indicator" id="speed-indicator">1.0x</div>
 
-        <video id="my-player" class="video-js vjs-fluid" controls preload="auto" data-setup='{}'>
-            <source id="video-src" src="" type="video/mp4">
-            </source>
+        <video id="my-player" class="video-js vjs-fluid" controls preload="metadata" data-setup='{}'>
             <p class="vjs-no-js">
                 To view this video please enable JavaScript, and consider upgrading to a
                 web browser that
@@ -577,15 +575,14 @@
         console.log('Video URL:', downloadUrl);
 
         if (downloadUrl) {
-            videoSrc.src = downloadUrl;
-
             // Add loading state
             videoContainer.classList.add('loading');
 
-            // Initialize Video.js player
+            // Initialize Video.js player first
             player = videojs('my-player', {
                 responsive: true,
                 fluid: true,
+                preload: 'metadata',
                 playbackRates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4],
                 html5: {
                     vhs: {
@@ -593,7 +590,14 @@
                     },
                     nativeAudioTracks: false,
                     nativeVideoTracks: false
-                }
+                },
+                techOrder: ['html5']
+            });
+
+            // Set the source after player initialization
+            player.src({
+                src: downloadUrl,
+                type: 'video/mp4'
             });
 
             // Remove loading state when video loads
@@ -620,25 +624,66 @@
 
                 let errorMessage = 'Failed to load video. ';
                 if (error) {
-                    errorMessage += `Error: ${error.message || error.code}. `;
+                    const errorCodes = {
+                        1: 'MEDIA_ERR_ABORTED - The video download was aborted',
+                        2: 'MEDIA_ERR_NETWORK - A network error occurred while fetching the video',
+                        3: 'MEDIA_ERR_DECODE - An error occurred while decoding the video',
+                        4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - The video format is not supported'
+                    };
+                    errorMessage += (errorCodes[error.code] || `Error code: ${error.code}`);
+                    if (error.message) {
+                        errorMessage += '. ' + error.message;
+                    }
                 }
-                errorMessage += 'Please check if the file exists and is accessible.';
+                errorMessage += '\n\nTroubleshooting:\n- Check your internet connection\n- Try refreshing the page\n- Large files may take time to buffer\n- The file might be corrupted or incompatible';
 
                 showError(errorMessage);
             });
 
-            // Add more event listeners for debugging
+            // Add more event listeners for debugging and large file support
             player.on('loadstart', function() {
                 console.log('Video load started');
             });
 
             player.on('loadedmetadata', function() {
-                console.log('Video metadata loaded');
+                const tech = player.tech({ IWillNotUseThisInPlugins: true });
+                console.log('Video metadata loaded. Duration:', player.duration(), 'Source:', downloadUrl);
+                if (tech && tech.el_) {
+                    console.log('Video size:', tech.el_.videoWidth + 'x' + tech.el_.videoHeight);
+                }
             });
 
             player.on('canplay', function() {
                 console.log('Video can play');
                 videoContainer.classList.remove('loading');
+            });
+
+            player.on('waiting', function() {
+                console.log('Video waiting/buffering');
+                videoContainer.classList.add('loading');
+            });
+
+            player.on('playing', function() {
+                console.log('Video playing');
+                videoContainer.classList.remove('loading');
+            });
+
+            player.on('stalled', function() {
+                console.log('Video stalled - network issue or large file buffering');
+            });
+
+            player.on('suspend', function() {
+                console.log('Video suspended - browser stopped fetching');
+            });
+
+            player.on('progress', function() {
+                const buffered = player.buffered();
+                if (buffered.length > 0) {
+                    const bufferedEnd = buffered.end(buffered.length - 1);
+                    const duration = player.duration();
+                    const bufferedPercent = (bufferedEnd / duration) * 100;
+                    console.log('Buffered:', bufferedPercent.toFixed(1) + '%');
+                }
             });
 
         } else {

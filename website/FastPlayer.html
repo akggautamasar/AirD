@@ -714,7 +714,11 @@
             console.log('Initializing player with URL:', videoUrl);
 
             if (videoUrl) {
+                // Set preload to metadata for better performance with large files
+                video.preload = 'metadata';
+
                 videoSource.src = videoUrl;
+                videoSource.type = 'video/mp4';
                 video.load();
 
                 // Show loading indicator
@@ -758,20 +762,34 @@
             video.addEventListener('progress', updateBuffered);
             video.addEventListener('ended', onVideoEnded);
             video.addEventListener('loadedmetadata', () => {
-                console.log('Video metadata loaded');
+                console.log('Video metadata loaded. Duration:', video.duration, 'Size:', video.videoWidth + 'x' + video.videoHeight);
                 updateTimeDisplay();
+            });
+            video.addEventListener('stalled', () => {
+                console.log('Video stalled - network issue or large file buffering');
+                showLoading();
+            });
+            video.addEventListener('suspend', () => {
+                console.log('Video suspended - browser stopped fetching');
             });
             video.addEventListener('error', (e) => {
                 console.error('Video error:', e, video.error);
                 hideLoading();
                 let errorMsg = 'Video failed to load. ';
                 if (video.error) {
-                    errorMsg += `Error code: ${video.error.code}. `;
+                    const errorCodes = {
+                        1: 'MEDIA_ERR_ABORTED - The video download was aborted',
+                        2: 'MEDIA_ERR_NETWORK - A network error occurred while fetching the video',
+                        3: 'MEDIA_ERR_DECODE - An error occurred while decoding the video',
+                        4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - The video format is not supported'
+                    };
+                    errorMsg += (errorCodes[video.error.code] || `Error code: ${video.error.code}`);
                     if (video.error.message) {
-                        errorMsg += video.error.message;
+                        errorMsg += '. ' + video.error.message;
                     }
                 }
-                alert(errorMsg + ' Please check if the file exists and is accessible.');
+                errorMsg += '\n\nTroubleshooting:\n- Check your internet connection\n- Try refreshing the page\n- The file might be corrupted or incompatible';
+                alert(errorMsg);
             });
 
             // Control events
