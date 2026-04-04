@@ -81,6 +81,24 @@ async def pdf_viewer_page():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/image-viewer")
+async def image_viewer_page():
+    try:
+        return FileResponse("website/ImageViewer.html")
+    except Exception as e:
+        logger.error(f"Error serving image viewer: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/embed-player")
+async def embed_player_page():
+    try:
+        return FileResponse("website/EmbedPlayer.html")
+    except Exception as e:
+        logger.error(f"Error serving embed player: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.get("/debug")
 async def debug_page():
     try:
@@ -482,6 +500,129 @@ async def api_get_folder_share_auth(request: Request):
             return JSONResponse({"status": "error", "message": "Failed to generate auth"})
     except Exception as e:
         logger.error(f"Get folder auth error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/generateQRCode")
+async def api_generate_qr_code(request: Request):
+    data = await request.json()
+    url = data.get("url")
+
+    if not url:
+        return JSONResponse({"status": "error", "message": "URL is required"})
+
+    try:
+        import qrcode
+        from io import BytesIO
+        import base64
+
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(url)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+
+        img_str = base64.b64encode(buffer.getvalue()).decode()
+
+        return JSONResponse({
+            "status": "ok",
+            "qr_code": f"data:image/png;base64,{img_str}"
+        })
+    except Exception as e:
+        logger.error(f"QR code generation error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/getFileMetadata")
+async def api_get_file_metadata(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    path = data.get("path")
+
+    if not path:
+        return JSONResponse({"status": "error", "message": "Path is required"})
+
+    try:
+        file = DRIVE_DATA.get_file(path)
+        if not file:
+            return JSONResponse({"status": "error", "message": "File not found"})
+
+        metadata = {
+            "name": file.name,
+            "size": file.size,
+            "type": file.type,
+            "upload_date": file.upload_date,
+            "path": file.path,
+            "file_id": file.file_id,
+            "duration": getattr(file, 'duration', 0),
+            "is_fast_import": getattr(file, 'is_fast_import', False)
+        }
+
+        return JSONResponse({"status": "ok", "metadata": metadata})
+    except Exception as e:
+        logger.error(f"Get file metadata error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/getStorageStats")
+async def api_get_storage_stats(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    try:
+        stats = DRIVE_DATA.get_storage_statistics()
+        return JSONResponse({"status": "ok", "stats": stats})
+    except Exception as e:
+        logger.error(f"Get storage stats error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/getEmbedCode")
+async def api_get_embed_code(request: Request):
+    data = await request.json()
+    path = data.get("path")
+
+    if not path:
+        return JSONResponse({"status": "error", "message": "Path is required"})
+
+    try:
+        base_url = data.get("base_url", "")
+        if not base_url:
+            base_url = request.base_url.scheme + "://" + request.base_url.netloc
+
+        embed_url = f"{base_url}/embed-player?path={urllib.parse.quote(path)}"
+
+        iframe_code = f'<iframe src="{embed_url}" width="800" height="450" frameborder="0" allowfullscreen></iframe>'
+
+        return JSONResponse({
+            "status": "ok",
+            "embed_url": embed_url,
+            "iframe_code": iframe_code
+        })
+    except Exception as e:
+        logger.error(f"Get embed code error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/findDuplicates")
+async def api_find_duplicates(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    try:
+        duplicates = DRIVE_DATA.find_duplicate_files()
+        return JSONResponse({"status": "ok", "duplicates": duplicates})
+    except Exception as e:
+        logger.error(f"Find duplicates error: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
 
 

@@ -483,7 +483,7 @@ class NewDriveData:
             def traverse_directory(folder):
                 if not folder or not hasattr(folder, 'contents'):
                     return
-                    
+
                 for item in folder.contents.values():
                     if query.lower() in item.name.lower() and not item.trash:
                         search_results[item.id] = item
@@ -496,6 +496,153 @@ class NewDriveData:
         except Exception as e:
             logger.error(f"Error during search: {e}")
             return {}
+
+    def find_duplicate_files(self):
+        """Find duplicate files based on size and name"""
+        logger.info("Finding duplicate files.")
+
+        try:
+            root_dir = self.get_directory("/")
+            files_by_signature = {}
+            duplicates = []
+
+            def traverse_directory(folder):
+                if not folder or not hasattr(folder, 'contents'):
+                    return
+
+                for item in folder.contents.values():
+                    if item.trash:
+                        continue
+
+                    if item.type == "folder":
+                        traverse_directory(item)
+                    elif item.type == "file":
+                        signature = f"{item.name}_{item.size}"
+
+                        if signature in files_by_signature:
+                            files_by_signature[signature].append({
+                                "name": item.name,
+                                "size": item.size,
+                                "path": item.path + "/" + item.id,
+                                "upload_date": item.upload_date
+                            })
+                        else:
+                            files_by_signature[signature] = [{
+                                "name": item.name,
+                                "size": item.size,
+                                "path": item.path + "/" + item.id,
+                                "upload_date": item.upload_date
+                            }]
+
+            traverse_directory(root_dir)
+
+            for signature, files in files_by_signature.items():
+                if len(files) > 1:
+                    duplicates.append({
+                        "signature": signature,
+                        "count": len(files),
+                        "files": files,
+                        "total_size": files[0]["size"] * len(files),
+                        "wasted_space": files[0]["size"] * (len(files) - 1)
+                    })
+
+            duplicates.sort(key=lambda x: x["wasted_space"], reverse=True)
+
+            logger.info(f"Found {len(duplicates)} duplicate file groups")
+            return duplicates
+
+        except Exception as e:
+            logger.error(f"Error finding duplicate files: {e}")
+            return []
+
+    def get_storage_statistics(self):
+        """Calculate comprehensive storage statistics"""
+        logger.info("Calculating storage statistics.")
+
+        try:
+            root_dir = self.get_directory("/")
+
+            stats = {
+                "total_files": 0,
+                "total_size": 0,
+                "total_folders": 0,
+                "file_types": {
+                    "video": {"count": 0, "size": 0},
+                    "audio": {"count": 0, "size": 0},
+                    "document": {"count": 0, "size": 0},
+                    "image": {"count": 0, "size": 0},
+                    "other": {"count": 0, "size": 0}
+                },
+                "recent_uploads": [],
+                "largest_files": []
+            }
+
+            all_files = []
+
+            def traverse_directory(folder):
+                if not folder or not hasattr(folder, 'contents'):
+                    return
+
+                for item in folder.contents.values():
+                    if item.trash:
+                        continue
+
+                    if item.type == "folder":
+                        stats["total_folders"] += 1
+                        traverse_directory(item)
+                    elif item.type == "file":
+                        stats["total_files"] += 1
+                        stats["total_size"] += item.size
+
+                        file_ext = item.name.lower().split('.')[-1] if '.' in item.name else ''
+
+                        file_category = "other"
+                        video_exts = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v']
+                        audio_exts = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'wma']
+                        doc_exts = ['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', 'xls', 'xlsx']
+                        image_exts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']
+
+                        if file_ext in video_exts:
+                            file_category = "video"
+                        elif file_ext in audio_exts:
+                            file_category = "audio"
+                        elif file_ext in doc_exts:
+                            file_category = "document"
+                        elif file_ext in image_exts:
+                            file_category = "image"
+
+                        stats["file_types"][file_category]["count"] += 1
+                        stats["file_types"][file_category]["size"] += item.size
+
+                        all_files.append({
+                            "name": item.name,
+                            "size": item.size,
+                            "path": item.path,
+                            "upload_date": item.upload_date,
+                            "category": file_category
+                        })
+
+            traverse_directory(root_dir)
+
+            all_files.sort(key=lambda x: x["upload_date"], reverse=True)
+            stats["recent_uploads"] = all_files[:10]
+
+            all_files.sort(key=lambda x: x["size"], reverse=True)
+            stats["largest_files"] = all_files[:10]
+
+            logger.info(f"Storage stats calculated: {stats['total_files']} files, {stats['total_size']} bytes")
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error calculating storage statistics: {e}")
+            return {
+                "total_files": 0,
+                "total_size": 0,
+                "total_folders": 0,
+                "file_types": {},
+                "recent_uploads": [],
+                "largest_files": []
+            }
 
 
 class NewBotMode:

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .viewer-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .image-wrapper {
+            max-width: 95%;
+            max-height: 95vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 95vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px 20px;
+            border-radius: 12px;
+            max-width: 400px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: #999;
+            margin-right: 16px;
+        }
+
+        .info-value {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewer-container">
+        <div class="loading" id="loading">Loading image...</div>
+        <div class="image-wrapper" style="display: none;" id="image-wrapper">
+            <img class="preview-image" id="preview-image" alt="Preview">
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" id="download-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download
+        </button>
+        <button class="control-btn" id="close-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Close
+        </button>
+    </div>
+
+    <div class="info-panel" id="info-panel" style="display: none;">
+        <div class="info-item">
+            <span class="info-label">File Name:</span>
+            <span class="info-value" id="file-name">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Size:</span>
+            <span class="info-value" id="file-size">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Dimensions:</span>
+            <span class="info-value" id="dimensions">-</span>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const filePath = params.get('path');
+        const fileName = params.get('name');
+
+        if (filePath) {
+            const img = document.getElementById('preview-image');
+            const loading = document.getElementById('loading');
+            const imageWrapper = document.getElementById('image-wrapper');
+            const infoPanel = document.getElementById('info-panel');
+
+            img.onload = function() {
+                loading.style.display = 'none';
+                imageWrapper.style.display = 'flex';
+                infoPanel.style.display = 'block';
+
+                document.getElementById('file-name').textContent = fileName || 'Image';
+                document.getElementById('dimensions').textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+
+                fetch(`/file?path=${encodeURIComponent(filePath)}`, { method: 'HEAD' })
+                    .then(res => {
+                        const size = res.headers.get('content-length');
+                        if (size) {
+                            const sizeInMB = (parseInt(size) / (1024 * 1024)).toFixed(2);
+                            document.getElementById('file-size').textContent = `${sizeInMB} MB`;
+                        }
+                    });
+            };
+
+            img.onerror = function() {
+                loading.textContent = 'Failed to load image';
+            };
+
+            img.src = `/file?path=${encodeURIComponent(filePath)}`;
+
+            document.getElementById('download-btn').addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.href = `/file?path=${encodeURIComponent(filePath)}`;
+                link.download = fileName || 'image';
+                link.click();
+            });
+
+            document.getElementById('close-btn').addEventListener('click', () => {
+                window.close();
+            });
+        } else {
+            document.getElementById('loading').textContent = 'No file specified';
+        }
+    </script>
+</body>
+</html>

@@ -11,18 +11,29 @@ function openFolder() {
 function openFile() {
     const fileName = this.getAttribute('data-name').toLowerCase()
     let path = '/file?path=' + this.getAttribute('data-path') + '/' + this.getAttribute('data-id')
+    const filePath = this.getAttribute('data-path') + '/' + this.getAttribute('data-id')
+    const fileNameOriginal = this.getAttribute('data-name')
 
     // Check if it's a PDF file
     if (fileName.endsWith('.pdf')) {
-        // Open PDF in the built-in viewer
-        const viewerPath = '/pdf-viewer?path=' + this.getAttribute('data-path') + '/' + this.getAttribute('data-id')
+        const viewerPath = '/pdf-viewer?path=' + filePath
+        window.open(viewerPath, '_blank')
+        return
+    }
+
+    // Check if it's an image file
+    if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') ||
+        fileName.endsWith('.gif') || fileName.endsWith('.bmp') || fileName.endsWith('.webp') ||
+        fileName.endsWith('.svg')) {
+        const viewerPath = '/image-viewer?path=' + encodeURIComponent(filePath) + '&name=' + encodeURIComponent(fileNameOriginal)
         window.open(viewerPath, '_blank')
         return
     }
 
     // Check if it's a video file
-    if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') || fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') || fileName.endsWith('.ogv')) {
-        // Show player selection modal
+    if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') ||
+        fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') ||
+        fileName.endsWith('.ogv')) {
         showPlayerSelectionModal(path)
         return
     }
@@ -246,6 +257,26 @@ function openMoreButton(div) {
         catch { }
         try {
             moreDiv.querySelector(`#folder-share-${id}`).addEventListener('click', shareFolder)
+        }
+        catch { }
+        try {
+            moreDiv.querySelector(`#qr-${id}`).addEventListener('click', function() {
+                const filePath = this.getAttribute('data-path') + '/' + id;
+                const fileName = this.getAttribute('data-name');
+                if (typeof generateFileQRCode === 'function') {
+                    generateFileQRCode(filePath, fileName);
+                }
+            })
+        }
+        catch { }
+        try {
+            moreDiv.querySelector(`#embed-${id}`).addEventListener('click', function() {
+                const filePath = this.getAttribute('data-path') + '/' + id;
+                const fileName = this.getAttribute('data-name');
+                if (typeof generateEmbedCode === 'function') {
+                    generateEmbedCode(filePath, fileName);
+                }
+            })
         }
         catch { }
     }

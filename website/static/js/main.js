@@ -206,6 +206,24 @@ function showDirectory(data) {
                             </svg>
                             <span>Share Material</span>
                         </div>
+                        <div id="qr-${item.id}" data-path="${item.path}" data-name="${item.name}" class="more-options-item qr-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"/>
+                                <rect x="14" y="3" width="7" height="7"/>
+                                <rect x="14" y="14" width="7" height="7"/>
+                                <rect x="3" y="14" width="7" height="7"/>
+                            </svg>
+                            <span>QR Code</span>
+                        </div>
+                        ${isVideoFile(item.name) ? `
+                        <div id="embed-${item.id}" data-path="${item.path}" data-name="${item.name}" class="more-options-item embed-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="16 18 22 12 16 6"/>
+                                <polyline points="8 6 2 12 8 18"/>
+                            </svg>
+                            <span>Embed Code</span>
+                        </div>
+                        ` : ''}
                     </div>
                 `
             }

@@ -200,6 +200,26 @@
                     </div>
                     <span>Learning Hub</span>
                 </a>
+                <div class="menu-item unselected-item analytics-menu-item" id="analytics-menu">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"/>
+                            <path d="M18 17V9"/>
+                            <path d="M13 17V5"/>
+                            <path d="M8 17v-3"/>
+                        </svg>
+                    </div>
+                    <span>Analytics</span>
+                </div>
+                <div class="menu-item unselected-item analytics-menu-item" id="duplicates-menu">
+                    <div class="menu-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                    </div>
+                    <span>Find Duplicates</span>
+                </div>
                 <a class="menu-item unselected-item" href="/?path=/trash">
                     <div class="menu-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -600,8 +620,25 @@
     <script src="static/js/breadcrumb.js"></script>
     <script src="static/js/fileCount.js"></script>
     <script src="static/js/premiumFeatures.js"></script>
+    <script src="static/js/analytics.js"></script>
+    <script src="static/js/qrcode.js"></script>
+    <script src="static/js/embed.js"></script>
+    <script src="static/js/duplicates.js"></script>
     <script src="static/js/main.js"></script>
     <script src="static/js/mobile.js"></script>
+    <script>
+        document.getElementById('analytics-menu')?.addEventListener('click', () => {
+            if (typeof showStorageDashboard === 'function') {
+                showStorageDashboard();
+            }
+        });
+
+        document.getElementById('duplicates-menu')?.addEventListener('click', () => {
+            if (typeof findDuplicateFiles === 'function') {
+                findDuplicateFiles();
+            }
+        });
+    </script>
 </body>
 
 </html>

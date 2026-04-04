@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embed Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .player-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            outline: none;
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #999;
+        }
+
+        .branding {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #0ea5e9;
+            text-decoration: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .branding:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <video id="video-player" controls autoplay></video>
+        <div class="error-message" id="error-message" style="display: none;">
+            Failed to load video
+        </div>
+    </div>
+
+    <a href="javascript:void(0)" class="branding" id="branding" style="display: none;">EduMaster Pro</a>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const filePath = params.get('path');
+        const autoplay = params.get('autoplay') !== 'false';
+        const loop = params.get('loop') === 'true';
+        const showBranding = params.get('branding') !== 'false';
+
+        if (filePath) {
+            const video = document.getElementById('video-player');
+            const errorMessage = document.getElementById('error-message');
+            const branding = document.getElementById('branding');
+
+            video.src = `/file?path=${encodeURIComponent(filePath)}`;
+            video.autoplay = autoplay;
+            video.loop = loop;
+
+            if (showBranding) {
+                branding.style.display = 'block';
+            }
+
+            video.onerror = function() {
+                video.style.display = 'none';
+                errorMessage.style.display = 'block';
+            };
+        } else {
+            document.getElementById('video-player').style.display = 'none';
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('error-message').textContent = 'No video specified';
+        }
+    </script>
+</body>
+</html>
