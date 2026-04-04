@@ -711,38 +711,68 @@
 
         // Initialize player
         function initPlayer() {
+            console.log('Initializing player with URL:', videoUrl);
+
             if (videoUrl) {
                 videoSource.src = videoUrl;
                 video.load();
-                
+
                 // Show loading indicator
                 showLoading();
-                
+
                 // Set up event listeners
                 setupEventListeners();
-                
+
                 // Initialize controls
                 updateVolumeDisplay();
                 updateSpeedDisplay();
-                
+
                 // Auto-hide controls after 3 seconds
                 showControls();
                 hideControlsAfterDelay();
             } else {
+                console.error('No video URL provided');
                 alert('No video URL provided');
             }
         }
 
         function setupEventListeners() {
             // Video events
-            video.addEventListener('loadstart', showLoading);
-            video.addEventListener('canplay', hideLoading);
-            video.addEventListener('waiting', showLoading);
-            video.addEventListener('playing', hideLoading);
+            video.addEventListener('loadstart', () => {
+                console.log('Video load started');
+                showLoading();
+            });
+            video.addEventListener('canplay', () => {
+                console.log('Video can play');
+                hideLoading();
+            });
+            video.addEventListener('waiting', () => {
+                console.log('Video waiting');
+                showLoading();
+            });
+            video.addEventListener('playing', () => {
+                console.log('Video playing');
+                hideLoading();
+            });
             video.addEventListener('timeupdate', updateProgress);
             video.addEventListener('progress', updateBuffered);
             video.addEventListener('ended', onVideoEnded);
-            video.addEventListener('loadedmetadata', updateTimeDisplay);
+            video.addEventListener('loadedmetadata', () => {
+                console.log('Video metadata loaded');
+                updateTimeDisplay();
+            });
+            video.addEventListener('error', (e) => {
+                console.error('Video error:', e, video.error);
+                hideLoading();
+                let errorMsg = 'Video failed to load. ';
+                if (video.error) {
+                    errorMsg += `Error code: ${video.error.code}. `;
+                    if (video.error.message) {
+                        errorMsg += video.error.message;
+                    }
+                }
+                alert(errorMsg + ' Please check if the file exists and is accessible.');
+            });
 
             // Control events
             playPauseBtn.addEventListener('click', togglePlayPause);

@@ -80,9 +80,40 @@ async def pdf_viewer_page():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/debug")
+async def debug_page():
+    try:
+        return FileResponse("website/debug.html")
+    except Exception as e:
+        logger.error(f"Error serving debug page: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.get("/favicon.ico")
 async def favicon():
     return Response(status_code=204)
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    from utils.directoryHandler import DRIVE_DATA
+    from utils.clients import get_client
+
+    status = {
+        "status": "ok",
+        "drive_data_loaded": DRIVE_DATA is not None,
+        "client_available": get_client() is not None,
+    }
+
+    if DRIVE_DATA:
+        try:
+            root = DRIVE_DATA.get_directory("/")
+            status["root_exists"] = root is not None
+        except:
+            status["root_exists"] = False
+
+    return JSONResponse(status)
 
 
 @app.get("/static/{file_path:path}")
@@ -105,12 +136,22 @@ async def dl_file(request: Request):
         from utils.directoryHandler import DRIVE_DATA
 
         path = request.query_params.get("path")
+        logger.info(f"File request for path: {path}")
+
         if not path:
+            logger.error("No path parameter provided")
             raise HTTPException(status_code=400, detail="Path parameter is required")
+
+        if not DRIVE_DATA:
+            logger.error("DRIVE_DATA not initialized")
+            raise HTTPException(status_code=503, detail="Drive data not initialized. Please wait and try again.")
 
         file = DRIVE_DATA.get_file(path)
         if not file:
-            raise HTTPException(status_code=404, detail="File not found")
+            logger.error(f"File not found at path: {path}")
+            raise HTTPException(status_code=404, detail=f"File not found at path: {path}")
+
+        logger.info(f"Streaming file: {file.name} (ID: {file.file_id})")
 
         # Fast import support
         channel = file.source_channel if (hasattr(file, 'is_fast_import') and file.is_fast_import and file.source_channel) else STORAGE_CHANNEL
@@ -119,8 +160,8 @@ async def dl_file(request: Request):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"File serving error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"File serving error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 # ====================== API Routes ======================

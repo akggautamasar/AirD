@@ -564,7 +564,7 @@
         const videoContainer = document.getElementById('video-container');
         const videoSrc = document.getElementById('video-src');
         const speedIndicator = document.getElementById('speed-indicator');
-        
+
         let currentSpeed = 1.0;
         let player = null;
 
@@ -574,38 +574,71 @@
             '5': 1.25, '6': 1.5, '7': 1.75, '8': 2.0, '9': 2.5
         };
 
+        console.log('Video URL:', downloadUrl);
+
         if (downloadUrl) {
             videoSrc.src = downloadUrl;
-            
+
             // Add loading state
             videoContainer.classList.add('loading');
-            
+
             // Initialize Video.js player
             player = videojs('my-player', {
                 responsive: true,
                 fluid: true,
-                playbackRates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4]
+                playbackRates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4],
+                html5: {
+                    vhs: {
+                        overrideNative: true
+                    },
+                    nativeAudioTracks: false,
+                    nativeVideoTracks: false
+                }
             });
 
             // Remove loading state when video loads
             player.ready(function() {
+                console.log('Player ready');
                 videoContainer.classList.remove('loading');
-                
+
                 // Load saved speed preference
                 const savedSpeed = localStorage.getItem('videoSpeed');
                 if (savedSpeed) {
                     currentSpeed = parseFloat(savedSpeed);
                     setPlaybackSpeed(currentSpeed);
                 }
-                
+
                 // Show keyboard shortcuts briefly
                 showKeyboardShortcuts();
             });
-            
-            // Handle video errors
+
+            // Handle video errors with detailed logging
             player.on('error', function() {
+                const error = player.error();
+                console.error('Video player error:', error);
                 videoContainer.classList.remove('loading');
-                showError('Failed to load video. Please check the URL and try again.');
+
+                let errorMessage = 'Failed to load video. ';
+                if (error) {
+                    errorMessage += `Error: ${error.message || error.code}. `;
+                }
+                errorMessage += 'Please check if the file exists and is accessible.';
+
+                showError(errorMessage);
+            });
+
+            // Add more event listeners for debugging
+            player.on('loadstart', function() {
+                console.log('Video load started');
+            });
+
+            player.on('loadedmetadata', function() {
+                console.log('Video metadata loaded');
+            });
+
+            player.on('canplay', function() {
+                console.log('Video can play');
+                videoContainer.classList.remove('loading');
             });
 
         } else {
