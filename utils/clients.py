@@ -41,10 +41,11 @@ async def initialize_clients():
                 )
                 client.loop = asyncio.get_running_loop()
                 await client.start()
-                await client.send_message(
-                    config.STORAGE_CHANNEL,
-                    f"Started - {type.title()} Client {client_id}",
-                )
+                # Skip sending startup message to reduce memory/time during init
+                # await client.send_message(
+                #     config.STORAGE_CHANNEL,
+                #     f"Started - {type.title()} Client {client_id}",
+                # )
                 multi_clients[client_id] = client
                 work_loads[client_id] = 0
             elif type == "user":
@@ -57,10 +58,11 @@ async def initialize_clients():
                     workdir=session_cache_path,
                     no_updates=True,
                 ).start()
-                await client.send_message(
-                    config.STORAGE_CHANNEL,
-                    f"Started - {type.title()} Client {client_id}",
-                )
+                # Skip sending startup message to reduce memory/time during init
+                # await client.send_message(
+                #     config.STORAGE_CHANNEL,
+                #     f"Started - {type.title()} Client {client_id}",
+                # )
                 premium_clients[client_id] = client
                 premium_work_loads[client_id] = 0
 
@@ -70,21 +72,18 @@ async def initialize_clients():
                 f"Failed To Start {type.title()} Client - {client_id} Error: {e}"
             )
 
-    await asyncio.gather(
-        *(
-            [
-                start_client(client_id, client, "bot")
-                for client_id, client in all_tokens.items()
-            ]
-            + [
-                start_client(client_id, client, "user")
-                for client_id, client in all_sessions.items()
-            ]
-        )
-    )
+    # Start clients sequentially to reduce memory spike
+    for client_id, token in all_tokens.items():
+        await start_client(client_id, token, "bot")
+        # Small delay between clients to reduce memory pressure
+        await asyncio.sleep(0.5)
+
+    for client_id, session in all_sessions.items():
+        await start_client(client_id, session, "user")
+        await asyncio.sleep(0.5)
+
     if len(multi_clients) == 0:
         logger.error("No Clients Were Initialized")
-
         # Forcefully terminates the program immediately
         os.kill(os.getpid(), signal.SIGKILL)
 
@@ -94,7 +93,10 @@ async def initialize_clients():
     logger.info("Clients Initialized")
 
     # Load the drive data
-    await loadDriveData()
+    try:
+        await loadDriveData()
+    except Exception as e:
+        logger.error(f"Failed to load drive data: {e}")
 
     # Start the backup drive data task
     asyncio.create_task(backup_drive_data())

@@ -25,7 +25,8 @@ import urllib.parse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     reset_cache_dir()
-    await initialize_clients()
+    # Start initialization in background to avoid blocking startup
+    asyncio.create_task(initialize_clients())
     asyncio.create_task(auto_ping_website())
     yield
 
@@ -98,15 +99,17 @@ async def favicon():
 async def health_check():
     """Health check endpoint for monitoring"""
     from utils.directoryHandler import DRIVE_DATA
-    from utils.clients import get_client
+    from utils.clients import multi_clients
 
     status = {
         "status": "ok",
+        "initializing": True,
+        "clients_count": len(multi_clients),
         "drive_data_loaded": DRIVE_DATA is not None,
-        "client_available": get_client() is not None,
     }
 
-    if DRIVE_DATA:
+    if len(multi_clients) > 0 and DRIVE_DATA:
+        status["initializing"] = False
         try:
             root = DRIVE_DATA.get_directory("/")
             status["root_exists"] = root is not None
