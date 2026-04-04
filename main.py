@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(docs_url=None, redoc_url=None, lifespan=lifespan)
+from fastapi.middleware.cors import CORSMiddleware
 logger = Logger(__name__)
 
 
