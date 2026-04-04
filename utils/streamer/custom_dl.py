@@ -52,12 +52,14 @@ class ByteStreamer:
                 # Get the appropriate port for the DC
                 port = 443 if not test_mode else 80
 
+                # Create Auth instance and get auth key
+                auth = Auth(client, file_id.dc_id, port, test_mode)
+                auth_key = await auth.create()
+
                 media_session = Session(
                     client,
                     file_id.dc_id,
-                    await Auth(
-                        client, file_id.dc_id, port, test_mode
-                    ).create(),
+                    auth_key,
                     test_mode,
                     is_media=True,
                 )
