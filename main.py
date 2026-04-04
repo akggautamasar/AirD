@@ -276,6 +276,7 @@ async def api_cancel_upload(request: Request):
 
 
 @app.post("/api/rename")
+@app.post("/api/renameFileFolder")
 async def api_rename(request: Request):
     from utils.directoryHandler import DRIVE_DATA
     data = await request.json()
@@ -283,11 +284,14 @@ async def api_rename(request: Request):
         return JSONResponse({"status": "Invalid password"})
 
     logger.info(f"rename {data}")
-    DRIVE_DATA.rename_file_folder(data["path"], data["new_name"])
+    # Support both 'new_name' and 'name' fields
+    new_name = data.get("new_name") or data.get("name")
+    DRIVE_DATA.rename_file_folder(data["path"], new_name)
     return JSONResponse({"status": "ok"})
 
 
 @app.post("/api/trash")
+@app.post("/api/trashFileFolder")
 async def api_trash(request: Request):
     from utils.directoryHandler import DRIVE_DATA
     data = await request.json()
@@ -300,6 +304,7 @@ async def api_trash(request: Request):
 
 
 @app.post("/api/delete")
+@app.post("/api/deleteFileFolder")
 async def api_delete(request: Request):
     from utils.directoryHandler import DRIVE_DATA
     data = await request.json()
