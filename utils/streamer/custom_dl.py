@@ -53,8 +53,8 @@ class ByteStreamer:
                 port = 443 if not test_mode else 80
 
                 # Create Auth instance and get auth key
-                # Auth signature: Auth(client, dc_id, test_mode)
-                auth = Auth(client, file_id.dc_id, test_mode)
+                # Auth signature: Auth(client, dc_id, port, test_mode)
+                auth = Auth(client, file_id.dc_id, port, test_mode)
                 auth_key = await auth.create()
 
                 media_session = Session(
