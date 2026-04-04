@@ -187,7 +187,6 @@ async def api_get_directory(request: Request):
         return JSONResponse({"status": "error", "message": str(e)})
 
 
-# Upload routes (kept mostly same, with minor safety)
 SAVE_PROGRESS = {}
 
 
@@ -231,12 +230,212 @@ async def upload_file(
         return JSONResponse({"status": "error", "message": str(e)})
 
 
-# ... (rest of your API routes remain the same - getSaveProgress, getUploadProgress, cancelUpload, rename, trash, delete, move, copy, getFolderTree, getFileInfoFromUrl, startFileDownloadFromUrl, getFileDownloadProgress, getFolderShareAuth)
+@app.post("/api/getSaveProgress")
+async def api_get_save_progress(request: Request):
+    global SAVE_PROGRESS
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
 
-# I kept them exactly as you had (with minor .get() safety), but to save space here they are unchanged from your last version.
-# Just copy the rest of your routes from the previous corrected main.py I sent.
+    id = data.get("id")
+    if id in SAVE_PROGRESS:
+        status, current, total = SAVE_PROGRESS[id]
+        return JSONResponse({"status": status, "current": current, "total": total})
+    return JSONResponse({"status": "not_found"})
 
-# At the very end, add this if you want explicit port logging:
+
+@app.post("/api/getUploadProgress")
+async def api_get_upload_progress(request: Request):
+    from utils.uploader import UPLOAD_PROGRESS
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    id = data.get("id")
+    if id in UPLOAD_PROGRESS:
+        status, current, total = UPLOAD_PROGRESS[id]
+        return JSONResponse({"status": status, "current": current, "total": total})
+    return JSONResponse({"status": "not_found"})
+
+
+@app.post("/api/cancelUpload")
+async def api_cancel_upload(request: Request):
+    from utils.uploader import UPLOAD_PROGRESS
+    global SAVE_PROGRESS
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    id = data.get("id")
+    if id in SAVE_PROGRESS:
+        del SAVE_PROGRESS[id]
+    if id in UPLOAD_PROGRESS:
+        UPLOAD_PROGRESS[id] = ("cancelled", 0, 0)
+
+    return JSONResponse({"status": "ok"})
+
+
+@app.post("/api/rename")
+async def api_rename(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"rename {data}")
+    DRIVE_DATA.rename_file_folder(data["path"], data["new_name"])
+    return JSONResponse({"status": "ok"})
+
+
+@app.post("/api/trash")
+async def api_trash(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"trash {data}")
+    DRIVE_DATA.trash_file_folder(data["path"], data["trash"])
+    return JSONResponse({"status": "ok"})
+
+
+@app.post("/api/delete")
+async def api_delete(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"delete {data}")
+    DRIVE_DATA.delete_file_folder(data["path"])
+    return JSONResponse({"status": "ok"})
+
+
+@app.post("/api/move")
+async def api_move(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"move {data}")
+    try:
+        DRIVE_DATA.move_file_folder(data["source_path"], data["destination_path"])
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        logger.error(f"Move error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/copy")
+async def api_copy(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    logger.info(f"copy {data}")
+    try:
+        DRIVE_DATA.copy_file_folder(data["source_path"], data["destination_path"])
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        logger.error(f"Copy error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/getFolderTree")
+async def api_get_folder_tree(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    try:
+        tree = DRIVE_DATA.get_folder_tree()
+        return JSONResponse({"status": "ok", "tree": tree})
+    except Exception as e:
+        logger.error(f"Get folder tree error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+DOWNLOAD_PROGRESS = {}
+
+
+@app.post("/api/getFileInfoFromUrl")
+async def api_get_file_info_from_url(request: Request):
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    url = data.get("url")
+    if not url:
+        return JSONResponse({"status": "error", "message": "URL is required"})
+
+    try:
+        file_info = await get_file_info_from_url(url)
+        return JSONResponse({"status": "ok", "file_info": file_info})
+    except Exception as e:
+        logger.error(f"Get file info error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
+@app.post("/api/startFileDownloadFromUrl")
+async def api_start_file_download_from_url(request: Request):
+    global DOWNLOAD_PROGRESS
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    url = data.get("url")
+    path = data.get("path")
+    filename = data.get("filename")
+    id = getRandomID()
+
+    if not url or not path or not filename:
+        return JSONResponse({"status": "error", "message": "URL, path, and filename are required"})
+
+    DOWNLOAD_PROGRESS[id] = ("running", 0, 0)
+    asyncio.create_task(download_file(url, path, filename, id, DOWNLOAD_PROGRESS))
+
+    return JSONResponse({"status": "ok", "id": id})
+
+
+@app.post("/api/getFileDownloadProgress")
+async def api_get_file_download_progress(request: Request):
+    global DOWNLOAD_PROGRESS
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    id = data.get("id")
+    if id in DOWNLOAD_PROGRESS:
+        status, current, total = DOWNLOAD_PROGRESS[id]
+        return JSONResponse({"status": status, "current": current, "total": total})
+    return JSONResponse({"status": "not_found"})
+
+
+@app.post("/api/getFolderShareAuth")
+async def api_get_folder_share_auth(request: Request):
+    from utils.directoryHandler import DRIVE_DATA
+    data = await request.json()
+    if data.get("password") != ADMIN_PASSWORD:
+        return JSONResponse({"status": "Invalid password"})
+
+    path = data.get("path")
+    if not path:
+        return JSONResponse({"status": "error", "message": "Path is required"})
+
+    try:
+        auth = DRIVE_DATA.get_folder_auth(path)
+        if auth:
+            return JSONResponse({"status": "ok", "auth": auth})
+        else:
+            return JSONResponse({"status": "error", "message": "Failed to generate auth"})
+    except Exception as e:
+        logger.error(f"Get folder auth error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
