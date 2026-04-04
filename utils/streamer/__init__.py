@@ -106,7 +106,30 @@ async def media_streamer(channel: int, message_id: int, file_name: str, request)
         )
 
     disposition = "attachment"
-    mime_type = mimetypes.guess_type(file_name.lower())[0] or "application/octet-stream"
+
+    # Enhanced MIME type detection with common video formats
+    file_extension = file_name.lower().split('.')[-1] if '.' in file_name else ''
+    mime_type_map = {
+        'mp4': 'video/mp4',
+        'm4v': 'video/mp4',
+        'mkv': 'video/x-matroska',
+        'webm': 'video/webm',
+        'avi': 'video/x-msvideo',
+        'mov': 'video/quicktime',
+        'wmv': 'video/x-ms-wmv',
+        'flv': 'video/x-flv',
+        'ts': 'video/mp2t',
+        'mpg': 'video/mpeg',
+        'mpeg': 'video/mpeg',
+        '3gp': 'video/3gpp',
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+        'ogg': 'audio/ogg',
+        'm4a': 'audio/mp4',
+        'flac': 'audio/flac',
+    }
+
+    mime_type = mime_type_map.get(file_extension) or mimetypes.guess_type(file_name.lower())[0] or "application/octet-stream"
 
     if (
         "video/" in mime_type

@@ -56,6 +56,20 @@ function showPlayerSelectionModal(filePath) {
             </div>
             <div class="modal-body">
                 <div class="player-options">
+                    <div class="player-option recommended" onclick="openPlyrPlayer('${filePath}')">
+                        <div class="player-icon plyr">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polygon points="10 8 16 12 10 16 10 8"/>
+                            </svg>
+                        </div>
+                        <div class="player-info">
+                            <h4>🎯 Universal Player</h4>
+                            <p>Modern player with excellent format support and compatibility</p>
+                            <span class="player-badge recommended">Recommended for all files</span>
+                        </div>
+                    </div>
+
                     <div class="player-option" onclick="openStandardPlayer('${filePath}')">
                         <div class="player-icon standard">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -65,10 +79,10 @@ function showPlayerSelectionModal(filePath) {
                         <div class="player-info">
                             <h4>🎥 Standard Player</h4>
                             <p>Full-featured player with all controls and high quality</p>
-                            <span class="player-badge">Best for: High-speed internet</span>
+                            <span class="player-badge">Alternative option</span>
                         </div>
                     </div>
-                    
+
                     <div class="player-option" onclick="openFastPlayer('${filePath}')">
                         <div class="player-icon fast">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -135,11 +149,30 @@ function showPlayerSelectionModal(filePath) {
         .player-icon.fast {
             background: linear-gradient(135deg, var(--success-500), var(--success-600));
         }
-        
+
+        .player-icon.plyr {
+            background: linear-gradient(135deg, #00b3ff, #0077ff);
+        }
+
+        .player-option.recommended {
+            border-color: #00b3ff;
+            background: linear-gradient(135deg, rgba(0, 179, 255, 0.05), rgba(0, 119, 255, 0.05));
+        }
+
+        .player-option.recommended:hover {
+            border-color: #0077ff;
+            background: linear-gradient(135deg, rgba(0, 179, 255, 0.1), rgba(0, 119, 255, 0.1));
+        }
+
         .player-icon svg {
             width: 28px;
             height: 28px;
             stroke: white;
+        }
+
+        .player-badge.recommended {
+            background: linear-gradient(135deg, #00b3ff, #0077ff);
+            color: white;
         }
         
         .player-info {
@@ -199,6 +232,12 @@ function showPlayerSelectionModal(filePath) {
     // Show background blur
     document.getElementById('bg-blur').style.zIndex = '999';
     document.getElementById('bg-blur').style.opacity = '0.5';
+}
+
+function openPlyrPlayer(filePath) {
+    const plyrPlayerPath = '/plyr-player?url=' + getRootUrl() + filePath;
+    window.open(plyrPlayerPath, '_blank');
+    closePlayerModal();
 }
 
 function openStandardPlayer(filePath) {

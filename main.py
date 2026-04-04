@@ -72,6 +72,15 @@ async def fast_player_page():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/plyr-player")
+async def plyr_player_page():
+    try:
+        return FileResponse("website/PlyrPlayer.html")
+    except Exception as e:
+        logger.error(f"Error serving plyr player: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.get("/pdf-viewer")
 async def pdf_viewer_page():
     try:
