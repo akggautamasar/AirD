@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TGDrive Debug</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #0a0a0a;
+            padding: 30px;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #00ff00;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #00aaff;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .test-item {
+            background: #1a1a1a;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #00ff00;
+        }
+
+        .test-item.pending {
+            border-left-color: #ffaa00;
+            opacity: 0.7;
+        }
+
+        .test-item.pass {
+            border-left-color: #00ff00;
+        }
+
+        .test-item.fail {
+            border-left-color: #ff0000;
+        }
+
+        .status {
+            font-weight: bold;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+
+        .status.pass {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .status.fail {
+            background: #ff0000;
+            color: #fff;
+        }
+
+        .status.pending {
+            background: #ffaa00;
+            color: #000;
+        }
+
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 10px;
+            color: #00ff00;
+            border: 1px solid #333;
+        }
+
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #00dd00;
+        }
+
+        .info {
+            color: #00aaff;
+        }
+
+        .error {
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 TGDrive Diagnostics</h1>
+        <p>This page helps diagnose issues with video playback and file streaming.</p>
+
+        <h2>System Health</h2>
+        <div id="health-check" class="test-item pending">
+            <span class="status pending">PENDING</span>
+            <strong>Health Check API</strong>
+            <div id="health-result"></div>
+        </div>
+
+        <h2>Current Request Info</h2>
+        <div class="test-item">
+            <strong>Current URL:</strong> <span id="current-url"></span><br>
+            <strong>User Agent:</strong> <span id="user-agent"></span><br>
+            <strong>Protocol:</strong> <span id="protocol"></span>
+        </div>
+
+        <h2>Video URL Test</h2>
+        <div class="test-item">
+            <strong>Test Video URL:</strong><br>
+            <input type="text" id="test-url" placeholder="Paste your video URL here" style="width: 100%; padding: 8px; margin-top: 10px; background: #000; color: #00ff00; border: 1px solid #333;">
+            <button onclick="testVideoUrl()">Test This URL</button>
+        </div>
+
+        <div id="url-test-result" class="test-item pending" style="display: none;">
+            <span class="status pending" id="url-test-status">TESTING</span>
+            <strong>URL Test Result</strong>
+            <div id="url-test-details"></div>
+        </div>
+
+        <h2>Sample Video Test</h2>
+        <p class="info">If you have a video file path, test it here:</p>
+        <div class="test-item">
+            <input type="text" id="sample-path" placeholder="Example: /ABC123/XYZ789" style="width: 100%; padding: 8px; background: #000; color: #00ff00; border: 1px solid #333;">
+            <button onclick="testSampleVideo()">Test Sample Video</button>
+        </div>
+
+        <div id="sample-test-result" style="margin-top: 20px;"></div>
+
+        <h2>Network Test</h2>
+        <div id="network-test" class="test-item pending">
+            <span class="status pending">PENDING</span>
+            <strong>CORS and Network Configuration</strong>
+            <div id="network-result"></div>
+        </div>
+
+        <button onclick="runAllTests()" style="margin-top: 30px; font-size: 16px;">🔄 Run All Tests</button>
+    </div>
+
+    <script>
+        // Display current info
+        document.getElementById('current-url').textContent = window.location.href;
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+        document.getElementById('protocol').textContent = window.location.protocol;
+
+        async function runAllTests() {
+            await testHealthCheck();
+            await testNetwork();
+        }
+
+        async function testHealthCheck() {
+            const healthDiv = document.getElementById('health-check');
+            const resultDiv = document.getElementById('health-result');
+
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    healthDiv.className = 'test-item pass';
+                    healthDiv.querySelector('.status').className = 'status pass';
+                    healthDiv.querySelector('.status').textContent = 'PASS';
+                } else {
+                    healthDiv.className = 'test-item fail';
+                    healthDiv.querySelector('.status').className = 'status fail';
+                    healthDiv.querySelector('.status').textContent = 'FAIL';
+                }
+
+                resultDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                healthDiv.className = 'test-item fail';
+                healthDiv.querySelector('.status').className = 'status fail';
+                healthDiv.querySelector('.status').textContent = 'FAIL';
+                resultDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+
+        async function testNetwork() {
+            const networkDiv = document.getElementById('network-test');
+            const resultDiv = document.getElementById('network-result');
+
+            try {
+                const response = await fetch('/favicon.ico');
+
+                networkDiv.className = 'test-item pass';
+                networkDiv.querySelector('.status').className = 'status pass';
+                networkDiv.querySelector('.status').textContent = 'PASS';
+
+                resultDiv.innerHTML = `
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>CORS Headers:</strong> ${response.headers.get('access-control-allow-origin') || 'Not set'}</p>
+                `;
+            } catch (error) {
+                networkDiv.className = 'test-item fail';
+                networkDiv.querySelector('.status').className = 'status fail';
+                networkDiv.querySelector('.status').textContent = 'FAIL';
+                resultDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+
+        async function testVideoUrl() {
+            const url = document.getElementById('test-url').value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            const testDiv = document.getElementById('url-test-result');
+            const statusSpan = document.getElementById('url-test-status');
+            const detailsDiv = document.getElementById('url-test-details');
+
+            testDiv.style.display = 'block';
+            testDiv.className = 'test-item pending';
+            statusSpan.className = 'status pending';
+            statusSpan.textContent = 'TESTING';
+            detailsDiv.innerHTML = '<p>Testing URL...</p>';
+
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+
+                testDiv.className = 'test-item pass';
+                statusSpan.className = 'status pass';
+                statusSpan.textContent = 'PASS';
+
+                detailsDiv.innerHTML = `
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p><strong>Content-Type:</strong> ${response.headers.get('content-type')}</p>
+                    <p><strong>Content-Length:</strong> ${response.headers.get('content-length')} bytes</p>
+                    <p><strong>Accept-Ranges:</strong> ${response.headers.get('accept-ranges')}</p>
+                    <p><strong>CORS:</strong> ${response.headers.get('access-control-allow-origin') || 'Not set'}</p>
+                    <button onclick="openInPlayer('${url}')">▶️ Open in Player</button>
+                `;
+            } catch (error) {
+                testDiv.className = 'test-item fail';
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+                detailsDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+
+        function openInPlayer(url) {
+            const streamUrl = '/stream?url=' + encodeURIComponent(url);
+            window.open(streamUrl, '_blank');
+        }
+
+        async function testSampleVideo() {
+            const path = document.getElementById('sample-path').value.trim();
+            if (!path) {
+                alert('Please enter a file path');
+                return;
+            }
+
+            const resultDiv = document.getElementById('sample-test-result');
+            resultDiv.innerHTML = '<div class="test-item pending"><span class="status pending">TESTING</span> Testing sample video...</div>';
+
+            const fileUrl = '/file?path=' + path;
+
+            try {
+                const response = await fetch(fileUrl, { method: 'HEAD' });
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="test-item pass">
+                            <span class="status pass">PASS</span>
+                            <strong>File accessible!</strong>
+                            <p><strong>URL:</strong> <code>${fileUrl}</code></p>
+                            <p><strong>Content-Type:</strong> ${response.headers.get('content-type')}</p>
+                            <p><strong>Size:</strong> ${response.headers.get('content-length')} bytes</p>
+                            <button onclick="window.open('/stream?url=${encodeURIComponent(window.location.origin + fileUrl)}', '_blank')">▶️ Play in Standard Player</button>
+                            <button onclick="window.open('/fast-player?url=${encodeURIComponent(window.location.origin + fileUrl)}', '_blank')">⚡ Play in Fast Player</button>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="test-item fail">
+                            <span class="status fail">FAIL</span>
+                            <strong>File not accessible</strong>
+                            <p class="error">Status: ${response.status} - ${response.statusText}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="test-item fail">
+                        <span class="status fail">FAIL</span>
+                        <strong>Error accessing file</strong>
+                        <p class="error">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 500);
+        });
+    </script>
+</body>
+</html>
