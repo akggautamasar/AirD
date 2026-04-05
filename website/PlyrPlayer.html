@@ -200,8 +200,12 @@
             const videoType = detectVideoType(videoUrl);
             console.log('Detected video type:', videoType);
 
+            // Set video source and type
             videoSource.src = videoUrl;
             videoSource.type = videoType;
+
+            // Force video element to load the source
+            videoElement.load();
 
             const player = new Plyr('#player', {
                 controls: [

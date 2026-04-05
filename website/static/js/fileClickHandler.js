@@ -33,9 +33,17 @@ function openFile() {
     // Check if it's a video file
     if (fileName.endsWith('.mp4') || fileName.endsWith('.mkv') || fileName.endsWith('.webm') ||
         fileName.endsWith('.mov') || fileName.endsWith('.avi') || fileName.endsWith('.ts') ||
-        fileName.endsWith('.ogv')) {
-        showPlayerSelectionModal(path)
-        return
+        fileName.endsWith('.ogv') || fileName.endsWith('.m4v') || fileName.endsWith('.flv') ||
+        fileName.endsWith('.wmv') || fileName.endsWith('.mpg') || fileName.endsWith('.mpeg') ||
+        fileName.endsWith('.3gp')) {
+        // Open Plyr player directly by default (best compatibility)
+        const plyrPlayerPath = '/plyr-player?url=' + getRootUrl() + path;
+        window.open(plyrPlayerPath, '_blank');
+        return;
+
+        // Uncomment below and comment above to show player selection modal instead
+        // showPlayerSelectionModal(path)
+        // return
     }
 
     window.open(path, '_blank')

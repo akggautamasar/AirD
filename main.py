@@ -90,6 +90,15 @@ async def pdf_viewer_page():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/test-player")
+async def test_player_page():
+    try:
+        return FileResponse("website/test-player.html")
+    except Exception as e:
+        logger.error(f"Error serving test player: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.get("/image-viewer")
 async def image_viewer_page():
     try:
@@ -153,7 +162,27 @@ async def static_files(file_path: str):
             with open(Path("website/static/js/apiHandler.js")) as f:
                 content = f.read()
                 content = content.replace("MAX_FILE_SIZE__SDGJDG", str(MAX_FILE_SIZE))
-            return Response(content=content, media_type="application/javascript")
+            return Response(
+                content=content,
+                media_type="application/javascript",
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0"
+                }
+            )
+
+        # Add no-cache headers for JavaScript files to prevent browser caching issues
+        if file_path.endswith('.js'):
+            return FileResponse(
+                f"website/static/{file_path}",
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0"
+                }
+            )
+
         return FileResponse(f"website/static/{file_path}")
     except Exception as e:
         logger.error(f"Static file error {file_path}: {e}")
